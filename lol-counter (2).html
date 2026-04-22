@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoL 카운터 픽 분석기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;600&display=swap');
+
+  :root {
+    --gold: #C89B3C;
+    --gold-light: #F0E6C8;
+    --dark: #0A0E17;
+    --dark2: #0F1923;
+    --dark3: #1A2332;
+    --blue: #00D4FF;
+    --red: #FF4655;
+    --panel: rgba(15,25,35,0.95);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--gold-light);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG grid */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(200,155,60,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,155,60,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  header {
+    text-align:center;
+    padding: 28px 20px 16px;
+    position: relative;
+    z-index:2;
+  }
+
+  header h1 {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(200,155,60,0.5);
+  }
+
+  header p {
+    font-size: 0.8rem;
+    color: rgba(240,230,200,0.5);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  .divider {
+    width: 160px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 10px auto 0;
+  }
+
+  /* MAIN LAYOUT */
+  .app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 16px 40px;
+    position: relative;
+    z-index:1;
+  }
+
+  /* DROP ZONE */
+  .drop-zone-wrap {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .drop-zone {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    border: 2px dashed var(--gold);
+    background: radial-gradient(circle, rgba(200,155,60,0.08) 0%, transparent 70%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: default;
+    box-shadow: 0 0 30px rgba(200,155,60,0.1), inset 0 0 30px rgba(200,155,60,0.05);
+  }
+
+  .drop-zone.over {
+    border-color: var(--blue);
+    background: radial-gradient(circle, rgba(0,212,255,0.15) 0%, transparent 70%);
+    box-shadow: 0 0 40px rgba(0,212,255,0.3), inset 0 0 30px rgba(0,212,255,0.1);
+    transform: scale(1.05);
+  }
+
+  .drop-zone.has-champ {
+    border-style: solid;
+    border-color: var(--gold);
+    background: radial-gradient(circle, rgba(200,155,60,0.12) 0%, transparent 70%);
+  }
+
+  .drop-icon {
+    font-size: 2.2rem;
+    opacity: 0.4;
+  }
+  .drop-label {
+    font-size: 0.72rem;
+    color: rgba(200,155,60,0.6);
+    text-align: center;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+  }
+
+  .drop-champ-img {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 20px rgba(200,155,60,0.4);
+  }
+
+  .drop-champ-name {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  /* RESULT PANEL */
+  .result-panel {
+    width: 100%;
+    max-width: 520px;
+    background: var(--panel);
+    border: 1px solid rgba(200,155,60,0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    display: none;
+    animation: fadeSlideUp 0.4s ease;
+  }
+
+  .result-panel.show { display: block; }
+
+  @keyframes fadeSlideUp {
+    from { opacity:0; transform: translateY(16px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .result-header {
+    background: linear-gradient(135deg, rgba(200,155,60,0.15), rgba(200,155,60,0.05));
+    border-bottom: 1px solid rgba(200,155,60,0.2);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .result-champ-icon {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid var(--gold);
+  }
+
+  .result-title {
+    flex: 1;
+  }
+  .result-title h2 {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+  .result-title p {
+    font-size: 0.72rem;
+    color: rgba(240,230,200,0.5);
+    margin-top: 2px;
+  }
+
+  .counter-list {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .counter-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,70,85,0.2);
+    border-left: 3px solid var(--red);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    transition: background 0.2s;
+  }
+
+  .counter-card:hover {
+    background: rgba(255,70,85,0.06);
+  }
+
+  .counter-champ-icon {
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(255,70,85,0.4);
+    flex-shrink: 0;
+  }
+
+  .counter-info { flex:1; }
+
+  .counter-name {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 0.95rem;
+    color: #FF8A94;
+    letter-spacing: 0.5px;
+  }
+
+  .counter-reason {
+    font-size: 0.76rem;
+    color: rgba(240,230,200,0.65);
+    margin-top: 5px;
+    line-height: 1.6;
+  }
+
+  .counter-badge {
+    font-size: 0.62rem;
+    background: rgba(255,70,85,0.2);
+    color: var(--red);
+    border: 1px solid rgba(255,70,85,0.3);
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    margin-top: 2px;
+    display: inline-block;
+  }
+
+  .loading-state {
+    padding: 30px;
+    text-align: center;
+    color: rgba(200,155,60,0.6);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+
+  .loading-state .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid rgba(200,155,60,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CHAMPION GRID */
+  .champ-section {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: rgba(200,155,60,0.5);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(200,155,60,0.2);
+    border-radius: 8px;
+    padding: 9px 14px 9px 36px;
+    color: var(--gold-light);
+    font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input::placeholder { color: rgba(200,155,60,0.3); }
+  .search-wrap input:focus { border-color: var(--gold); }
+  .search-wrap .s-icon {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: rgba(200,155,60,0.4);
+    font-size: 0.9rem;
+  }
+
+  .champ-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 2px;
+  }
+
+  .champ-grid::-webkit-scrollbar { width: 4px; }
+  .champ-grid::-webkit-scrollbar-track { background: transparent; }
+  .champ-grid::-webkit-scrollbar-thumb { background: rgba(200,155,60,0.3); border-radius: 2px; }
+
+  .champ-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: grab;
+    transition: transform 0.15s, opacity 0.15s;
+    user-select: none;
+    -webkit-user-drag: element;
+  }
+
+  .champ-tile:active { cursor: grabbing; }
+  .champ-tile:hover { transform: translateY(-3px); }
+
+  .champ-tile img {
+    width: 52px; height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(200,155,60,0.25);
+    pointer-events: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .champ-tile:hover img {
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(200,155,60,0.35);
+  }
+
+  .champ-tile span {
+    font-size: 0.58rem;
+    color: rgba(240,230,200,0.55);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .dragging { opacity: 0.4; transform: scale(0.95); }
+
+  .reset-btn {
+    margin-top: 8px;
+    background: none;
+    border: 1px solid rgba(200,155,60,0.25);
+    color: rgba(200,155,60,0.6);
+    font-size: 0.72rem;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    display: none;
+  }
+  .reset-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .reset-btn.show { display: inline-block; }
+
+  .error-msg {
+    padding: 20px;
+    text-align: center;
+    color: rgba(255,70,85,0.7);
+    font-size: 0.8rem;
+  }
+
+  /* SPLASH ART */
+  .splash-banner {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: none;
+    animation: fadeSlideUp 0.5s ease;
+    border: 1px solid rgba(200,155,60,0.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .splash-banner.show { display: block; }
+
+  .splash-banner img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    filter: brightness(0.85);
+    transition: filter 0.3s;
+  }
+  .splash-banner:hover img { filter: brightness(1); }
+
+  .splash-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 30%,
+      rgba(10,14,23,0.7) 70%,
+      rgba(10,14,23,0.95) 100%
+    );
+    pointer-events: none;
+  }
+
+  .splash-label {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .splash-label h3 {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1.5rem;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+
+  .splash-label .role-tag {
+    font-size: 0.68rem;
+    background: rgba(200,155,60,0.25);
+    border: 1px solid rgba(200,155,60,0.5);
+    color: var(--gold);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  /* Counter card — bigger image */
+  .counter-splash {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    object-position: top center;
+    border: 1px solid rgba(255,70,85,0.4);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔ COUNTER PICK ANALYZER</h1>
+  <p>챔피언을 원 안으로 드래그하세요 · 2026 시즌 기준</p>
+  <div class="divider"></div>
+</header>
+
+<div class="app">
+
+  <!-- DROP ZONE -->
+  <div class="drop-zone-wrap">
+    <div class="drop-zone" id="dropZone">
+      <span class="drop-icon" id="dropIcon">⬇</span>
+      <span class="drop-label" id="dropLabel">여기에 챔피언을<br>드래그하세요</span>
+    </div>
+    <button class="reset-btn" id="resetBtn" onclick="resetChamp()">↺ 초기화</button>
+  </div>
+
+  <!-- SPLASH BANNER -->
+  <div class="splash-banner" id="splashBanner">
+    <img id="splashImg" src="" alt="">
+    <div class="splash-overlay"></div>
+    <div class="splash-label">
+      <h3 id="splashName"></h3>
+      <span class="role-tag" id="splashRole"></span>
+    </div>
+  </div>
+
+  <!-- RESULT PANEL -->
+  <div class="result-panel" id="resultPanel">
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>
+      카운터 분석 중...
+    </div>
+    <div id="resultContent"></div>
+  </div>
+
+  <!-- CHAMPION LIST -->
+  <div class="champ-section">
+    <div class="section-label">챔피언 목록 — 드래그하여 선택</div>
+    <div class="search-wrap">
+      <span class="s-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="챔피언 검색..." oninput="filterChamps()">
+    </div>
+    <div class="champ-grid" id="champGrid"></div>
+  </div>
+
+</div>
+
+<script>
+// ========== DATA ==========
+const champions = [
+  "Aatrox","Ahri","Akali","Akshan","Alistar","Amumu","Anivia","Annie","Aphelios",
+  "Ashe","Aurelion Sol","Azir","Bard","Bel'Veth","Blitzcrank","Brand","Braum",
+  "Briar","Caitlyn","Camille","Cassiopeia","Cho'Gath","Corki","Darius","Diana",
+  "Dr. Mundo","Draven","Ekko","Elise","Evelynn","Ezreal","Fiddlesticks","Fiora",
+  "Fizz","Galio","Gangplank","Garen","Gnar","Gragas","Graves","Gwen","Hecarim",
+  "Heimerdinger","Illaoi","Irelia","Ivern","Janna","Jarvan IV","Jax","Jayce",
+  "Jhin","Jinx","K'Sante","Kai'Sa","Kalista","Karma","Karthus","Kassadin",
+  "Katarina","Kayle","Kayn","Kennen","Kha'Zix","Kindred","Kled","Kog'Maw",
+  "LeBlanc","Lee Sin","Leona","Lillia","Lissandra","Lucian","Lulu","Lux",
+  "Malphite","Malzahar","Maokai","Master Yi","Miss Fortune","Mordekaiser",
+  "Morgana","Naafiri","Nami","Nasus","Nautilus","Neeko","Nidalee","Nilah",
+  "Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon","Poppy",
+  "Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc",
+  "Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna",
+  "Seraphine","Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner",
+  "Smolder","Sona","Soraka","Swain","Sylas","Syndra","Tahm Kench","Taliyah",
+  "Talon","Taric","Teemo","Thresh","Tristana","Trundle","Tryndamere","Twisted Fate",
+  "Twitch","Udyr","Urgot","Varus","Vayne","Veigar","Vel'Koz","Vex","Vi","Viego",
+  "Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah","Xerath","Xin Zhao",
+  "Yasuo","Yone","Yorick","Yuumi","Zac","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"
+];
+
+function champId(name) {
+  const map = {
+    "Aurelion Sol":"AurelionSol","Bel'Veth":"Belveth","Cho'Gath":"Chogath",
+    "Dr. Mundo":"DrMundo","Jarvan IV":"JarvanIV","K'Sante":"KSante",
+    "Kai'Sa":"Kaisa","Kha'Zix":"Khazix","Kog'Maw":"KogMaw","LeBlanc":"Leblanc",
+    "Lee Sin":"LeeSin","Master Yi":"MasterYi","Miss Fortune":"MissFortune",
+    "Naafiri":"Naafiri","Nunu & Willump":"Nunu","Orianna":"Orianna",
+    "Rek'Sai":"RekSai","Renata Glasc":"Renata","Tahm Kench":"TahmKench",
+    "Twisted Fate":"TwistedFate","Vel'Koz":"Velkoz","Xin Zhao":"XinZhao",
+    "Kog'Maw":"KogMaw"
+  };
+  return map[name] || name.replace(/[^a-zA-Z0-9]/g,'');
+}
+
+function iconUrl(name) {
+  return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${champId(name)}.png`;
+}
+
+function splashUrl(name) {
+  return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champId(name)}_0.jpg`;
+}
+
+// ========== RENDER CHAMPS ==========
+let allChamps = [...champions];
+let filteredChamps = [...allChamps];
+
+function renderChamps(list) {
+  const grid = document.getElementById('champGrid');
+  grid.innerHTML = '';
+  list.forEach(name => {
+    const tile = document.createElement('div');
+    tile.className = 'champ-tile';
+    tile.draggable = true;
+    tile.dataset.name = name;
+    tile.innerHTML = `<img src="${iconUrl(name)}" alt="${name}" onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/Ryze.png'"><span>${name}</span>`;
+    tile.addEventListener('dragstart', onDragStart);
+    tile.addEventListener('dragend', onDragEnd);
+    // Touch support
+    tile.addEventListener('touchstart', onTouchStart, {passive:true});
+    grid.appendChild(tile);
+  });
+}
+
+function filterChamps() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  filteredChamps = allChamps.filter(c => c.toLowerCase().includes(q));
+  renderChamps(filteredChamps);
+}
+
+renderChamps(allChamps);
+
+// ========== DRAG & DROP ==========
+let dragName = null;
+let dragEl = null;
+
+function onDragStart(e) {
+  dragName = e.currentTarget.dataset.name;
+  dragEl = e.currentTarget;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.setData('text/plain', dragName);
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+}
+
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('over');
+});
+
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('over');
+  const name = e.dataTransfer.getData('text/plain') || dragName;
+  if (name) loadChampion(name);
+});
+
+// ========== TOUCH SUPPORT ==========
+let touchChamp = null;
+let ghost = null;
+
+function onTouchStart(e) {
+  const tile = e.currentTarget;
+  touchChamp = tile.dataset.name;
+  ghost = tile.cloneNode(true);
+  ghost.style.cssText = `position:fixed;opacity:0.8;pointer-events:none;z-index:9999;width:60px;`;
+  document.body.appendChild(ghost);
+
+  tile.addEventListener('touchmove', onTouchMove, {passive:false});
+  tile.addEventListener('touchend', onTouchEnd);
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  if (ghost) { ghost.style.left = (t.clientX - 30)+'px'; ghost.style.top = (t.clientY - 30)+'px'; }
+  const dz = dropZone.getBoundingClientRect();
+  if (t.clientX > dz.left && t.clientX < dz.right && t.clientY > dz.top && t.clientY < dz.bottom) {
+    dropZone.classList.add('over');
+  } else {
+    dropZone.classList.remove('over');
+  }
+}
+
+function onTouchEnd(e) {
+  const t = e.changedTouches[0];
+  if (ghost) { ghost.remove(); ghost = null; }
+  dropZone.classList.remove('over');
+  const dz = dropZone.getBoundingClientRect();
+  if (t.clientX > dz.left && t.clientX < dz.right && t.clientY > dz.top && t.clientY < dz.bottom) {
+    loadChampion(touchChamp);
+  }
+  e.currentTarget.removeEventListener('touchmove', onTouchMove);
+  e.currentTarget.removeEventListener('touchend', onTouchEnd);
+}
+
+// ========== HARDCODED COUNTER DATA (2026 시즌 기준) ==========
+const counterDB = {
+  "Aatrox": { role: "탑", counters: [
+    { name: "Vayne", severity: "압도적", reason: "실버 볼트의 트루 데미지가 Aatrox의 높은 HP를 무시하고 녹여버립니다. 텀블로 스킬을 회피하며 1:1 교전에서 우위를 점합니다." },
+    { name: "Fiora", severity: "매우 강함", reason: "리포스트로 Aatrox의 Q를 막고 역으로 스턴을 넣을 수 있습니다. 바이탈 시스템으로 짧은 교전에서도 높은 피해를 입힙니다." },
+    { name: "Gwen", severity: "강함", reason: "W 무적 구간으로 Aatrox의 핵심 스킬을 무효화합니다. 지속 딜링 능력이 Aatrox의 회복보다 높아 장기전에서도 유리합니다." },
+    { name: "Camille", severity: "강함", reason: "W의 트루 데미지 구간이 Aatrox의 회복을 압도합니다. 이동기로 스킬 회피가 용이하며 분리 능력으로 도망도 막습니다." }
+  ]},
+  "Ahri": { role: "미드", counters: [
+    { name: "Syndra", severity: "매우 강함", reason: "사거리와 버스트가 Ahri를 압도하며, E 스턴으로 Ahri의 접근을 원천 차단합니다. 라인전에서 지속적으로 푸시해 로밍을 억제합니다." },
+    { name: "Lissandra", severity: "매우 강함", reason: "W로 Ahri의 참매혹을 회피하고, 궁극기 자가 동결로 버스트를 무력화합니다. CC기가 많아 Ahri의 기동성을 봉쇄합니다." },
+    { name: "Viktor", severity: "강함", reason: "장거리 W 침묵으로 Ahri의 스킬 연계를 끊습니다. 라인 푸시와 CC가 강해 Ahri가 자유롭게 로밍하기 어렵습니다." },
+    { name: "Galio", severity: "강함", reason: "W로 매혹을 받아도 반격 태세로 전환되며 피해를 줄입니다. 높은 마저로 Ahri의 데미지가 심각하게 감소합니다." }
+  ]},
+  "Akali": { role: "미드/탑", counters: [
+    { name: "Lissandra", severity: "압도적", reason: "E 발사체가 Akali의 스모그를 통과하며, 자가 동결로 Akali의 궁극기 버스트를 완전히 무효화합니다. CC 사슬로 Akali가 도망도 못 갑니다." },
+    { name: "Diana", severity: "매우 강함", reason: "고정 CC와 강한 어쌔신 교전 능력으로 Akali의 은신 이후 재등장 타이밍을 잡아냅니다. 방어막으로 버스트 일부를 흡수합니다." },
+    { name: "Galio", severity: "강함", reason: "높은 마저와 W 도발로 Akali의 버스트를 버텨냅니다. 팀파이트에서 글로벌 참전으로 Akali의 분리 교전을 무력화합니다." },
+    { name: "Malzahar", severity: "강함", reason: "궁극기 억압으로 Akali의 모든 움직임을 봉쇄합니다. 패시브 방어막이 Akali의 일부 버스트를 흡수해줍니다." }
+  ]},
+  "Alistar": { role: "서포터", counters: [
+    { name: "Morgana", severity: "압도적", reason: "W 블랙 실드가 Alistar의 CC를 완전히 무효화합니다. Alistar의 콤보가 막히면 아무것도 못 하는 챔피언이 됩니다." },
+    { name: "Thresh", severity: "강함", reason: "랜턴으로 팀원을 구출해 Alistar의 CC 후 처형 패턴을 방해합니다. 장거리 후크로 Alistar보다 먼저 이니시를 잡을 수 있습니다." },
+    { name: "Lulu", severity: "강함", reason: "W 폴리모프로 Alistar의 돌진을 무효화하고, 방어막으로 딜을 버텨냅니다. Alistar의 진입 타이밍을 계속 방해합니다." },
+    { name: "Janna", severity: "강함", reason: "궁극기로 Alistar의 이니시를 그대로 뒤집어버립니다. 토네이도로 돌진을 공중에서 차단합니다." }
+  ]},
+  "Amumu": { role: "정글", counters: [
+    { name: "Kha'Zix", severity: "매우 강함", reason: "Amumu가 혼자 있을 때 진화한 Q 점프로 접근해 순삭합니다. 정글 싸움에서 Amumu의 Q 밴디지를 스스로 피하기 어렵습니다." },
+    { name: "Nocturne", severity: "강함", reason: "궁극기로 Amumu의 시야를 차단하고 역습합니다. 1:1 싸움에서 Amumu의 낮은 이동속도를 이용해 일방적으로 제압합니다." },
+    { name: "Shyvana", severity: "강함", reason: "빠른 정글 클리어 속도로 Amumu보다 앞서 성장합니다. Amumu의 이니시를 피해 역으로 용 오브젝트를 계속 챙깁니다." },
+    { name: "Graves", severity: "강함", reason: "근거리 폭발 딜로 Amumu를 정글에서 빠르게 처치합니다. 연막탄으로 시야를 차단해 Amumu의 갱킹을 무력화합니다." }
+  ]},
+  "Anivia": { role: "미드", counters: [
+    { name: "Fizz", severity: "압도적", reason: "W 점프로 Anivia의 얼음 벽을 무시하고, 스킬을 회피해가며 접근합니다. 기동성이 없는 Anivia는 Fizz의 갭 클로즈를 막을 수단이 없습니다." },
+    { name: "LeBlanc", severity: "매우 강함", reason: "이동기가 많아 Anivia의 모든 CC를 회피합니다. 짧은 교전으로 Anivia를 순삭하고 빠져나갑니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Anivia의 스킬 데미지를 흡수합니다. 후반 점멸 점프로 지속적으로 Anivia를 위협합니다." },
+    { name: "Zed", severity: "강함", reason: "AD 딜러라 Anivia의 마저를 무시합니다. 그림자 분신으로 CC를 회피하며 근접에서 폭딜을 넣습니다." }
+  ]},
+  "Annie": { role: "미드", counters: [
+    { name: "Syndra", severity: "매우 강함", reason: "더 긴 사거리로 Annie가 접근하기 전에 포킹합니다. Annie의 짧은 사거리를 이용해 안전하게 라인전을 지배합니다." },
+    { name: "Lux", severity: "강함", reason: "장거리 E 방어막과 Q 묶기로 Annie의 접근을 차단합니다. 긴 사거리로 Annie가 스킬 사거리 안에 들어오기 전에 딜을 넣습니다." },
+    { name: "Orianna", severity: "강함", reason: "공의 위치를 조절해 Annie의 접근 타이밍을 차단합니다. 긴 사거리와 지속 딜로 Annie를 안전하게 압박합니다." },
+    { name: "Zoe", severity: "강함", reason: "긴 사거리 수면 마법으로 Annie를 무력화합니다. 포킹 능력이 Annie보다 월등히 높아 라인전 내내 우위를 점합니다." }
+  ]},
+  "Aphelios": { role: "원딜", counters: [
+    { name: "Draven", severity: "매우 강함", reason: "초반 압도적인 교환 딜로 Aphelios를 라인에서 몰아붙입니다. Aphelios의 무기 교체 메커니즘보다 단순하고 강한 라인전 능력을 가집니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "Q 이중 샷의 포킹이 Aphelios보다 일관적으로 강합니다. 궁극기가 Aphelios의 포지셔닝 실수를 치명적으로 처벌합니다." },
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Aphelios가 무기를 세팅하기 전에 지속 견제합니다. 함정으로 Aphelios의 도주 경로를 차단합니다." },
+    { name: "Jinx", severity: "강함", reason: "로켓 사거리로 Aphelios를 원거리에서 견제합니다. 스택이 쌓이면 Aphelios보다 빠른 공격 속도로 압도합니다." }
+  ]},
+  "Ashe": { role: "원딜", counters: [
+    { name: "Draven", severity: "압도적", reason: "Ashe는 CC로 교환을 피하기 어렵고, Draven의 초반 강한 딜 앞에 일방적으로 밀립니다. Q 속도 증가만으로는 Draven의 폭딜을 버티기 불가능합니다." },
+    { name: "Lucian", severity: "매우 강함", reason: "짧은 교전에서 Lucian의 연사 딜이 Ashe를 앞섭니다. 이동기로 Ashe의 슬로우를 피하며 교환합니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "Ashe가 정지해있는 만큼 MF의 E 러브탭 패시브가 쉽게 터집니다. 라인전 포킹에서 Ashe가 대응하기 어렵습니다." },
+    { name: "Caitlyn", severity: "강함", reason: "Ashe보다 긴 사거리로 지속 포킹하며 라인전을 주도합니다. Ashe의 느린 이동으로 함정 회피도 어렵습니다." }
+  ]},
+  "Azir": { role: "미드", counters: [
+    { name: "Zed", severity: "매우 강함", reason: "그림자로 Azir의 R 셔플을 이용한 벽 밀기를 무효화합니다. 근접에서 폭딜이 Azir의 긴 사정거리 이점을 상쇄합니다." },
+    { name: "Katarina", severity: "강함", reason: "단검 쿨다운마다 Azir를 압박해 병사 배치를 방해합니다. Azir의 스킬이 빗나가면 역으로 Katarina가 올인을 시도합니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프와 갭 클로즈로 Azir에게 빠르게 근접합니다. AD 딜러라 Azir의 마저 세팅을 무시합니다." },
+    { name: "Fizz", severity: "강함", reason: "W 점프로 Azir의 병사 공격을 무시하고 근접합니다. Azir의 약한 근접 교환 능력을 이용해 올인합니다." }
+  ]},
+  "Blitzcrank": { role: "서포터", counters: [
+    { name: "Morgana", severity: "압도적", reason: "블랙 실드가 Blitzcrank의 Q 훅을 완전히 무효화합니다. Blitzcrank의 유일한 장점인 훅이 막히면 아무것도 못 합니다." },
+    { name: "Thresh", severity: "강함", reason: "Blitzcrank보다 더 다양한 CC와 이니시 수단을 가집니다. 랜턴으로 훅 당한 아군을 구출할 수도 있습니다." },
+    { name: "Lulu", severity: "강함", reason: "훅 후 폴리모프로 Blitzcrank의 후속 CC를 방해합니다. 방어막으로 아군을 생존시킵니다." },
+    { name: "Braum", severity: "강함", reason: "방패로 Blitzcrank의 Q를 막아냅니다. 낮은 이동속도를 이용해 레인전에서 안전하게 포킹합니다." }
+  ]},
+  "Brand": { role: "서포터/미드", counters: [
+    { name: "Fizz", severity: "매우 강함", reason: "W 점프로 Brand의 모든 스킬을 회피합니다. 연소 스택도 쌓이기 전에 빠르게 접근해 처치합니다." },
+    { name: "Xerath", severity: "강함", reason: "Brand보다 더 긴 사거리로 안전하게 포킹합니다. Brand가 사거리 안에 들어오기 전에 지속 피해를 입힙니다." },
+    { name: "LeBlanc", severity: "강함", reason: "이동기로 Brand의 CC를 회피하며 교환합니다. Brand의 스킬이 빗나가면 역으로 W-E 콤보를 넣습니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Brand의 불 데미지를 흡수합니다. 후반 전이 역전되어 Brand를 일방적으로 압박합니다." }
+  ]},
+  "Caitlyn": { role: "원딜", counters: [
+    { name: "Draven", severity: "매우 강함", reason: "Caitlyn의 긴 사거리 이점을 상쇄할 정도의 폭발적인 교환 딜을 가집니다. Caitlyn의 Q를 받아도 역으로 더 많은 딜을 돌려줍니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "러브탭 패시브로 Caitlyn의 짧은 교환 때도 큰 피해를 줍니다. 궁극기가 Caitlyn의 포지셔닝을 강제로 무너뜨립니다." },
+    { name: "Sivir", severity: "강함", reason: "W 주문 방어막으로 Caitlyn의 E 고정 피해를 흡수합니다. 빠른 라인 클리어로 Caitlyn의 함정 세팅 시간을 빼앗습니다." },
+    { name: "Jinx", severity: "강함", reason: "후반으로 갈수록 로켓 사거리가 Caitlyn의 긴 사거리와 대등해집니다. 광역 딜이 Caitlyn보다 팀파이트에서 강합니다." }
+  ]},
+  "Camille": { role: "탑", counters: [
+    { name: "Malphite", severity: "압도적", reason: "아머 수치가 높아 Camille의 Q 트루 데미지 구간 비율이 낮아집니다. 궁극기 이니시로 Camille이 어디서 뛰어들어도 역으로 CC를 넣습니다." },
+    { name: "Fiora", severity: "매우 강함", reason: "Camille의 E 착지 후 스턴 타이밍에 리포스트를 사용해 무효화합니다. 지속 딜과 회복으로 Camille을 압도합니다." },
+    { name: "Irelia", severity: "강함", reason: "블레이드 서지로 Camille의 E 착지를 피하거나 역교환합니다. 스택 버프 상태에서 Camille보다 교전 능력이 앞섭니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Camille의 스킬 연계를 끊습니다. 높은 리젠으로 Camille의 지속 포킹을 버텨냅니다." }
+  ]},
+  "Darius": { role: "탑", counters: [
+    { name: "Vayne", severity: "매우 강함", reason: "트루 데미지로 Darius의 높은 HP를 무시합니다. 텀블 이동기로 Darius의 Q 외곽(힐 구간)을 밟지 않고 교환합니다." },
+    { name: "Quinn", severity: "강함", reason: "원거리 포킹과 실명으로 Darius가 Q를 사용하기 어렵습니다. 붙으려 할 때 빠른 이동으로 도망갑니다." },
+    { name: "Kennen", severity: "강함", reason: "원거리 공격으로 Darius가 접근하기 어렵게 만듭니다. 기절로 Darius의 E 갈고리 후 콤보를 방해합니다." },
+    { name: "Fiora", severity: "강함", reason: "Darius의 E에 리포스트를 사용해 스턴을 무효화합니다. 바이탈 위치를 공략해 단시간에 큰 피해를 줍니다." }
+  ]},
+  "Diana": { role: "미드/정글", counters: [
+    { name: "Lissandra", severity: "매우 강함", reason: "자가 동결 궁극기로 Diana의 R 진입 후 버스트를 완전히 무력화합니다. E 빙결 발톱으로 Diana의 이동을 계속 방해합니다." },
+    { name: "Galio", severity: "강함", reason: "높은 마저로 Diana의 마법 데미지를 대부분 흡수합니다. W 도발로 Diana를 역으로 CC 겁니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Diana의 Q 딜을 줄입니다. 후반에는 Kassadin이 더 강한 버스트로 Diana를 압도합니다." },
+    { name: "Zed", severity: "강함", reason: "AD 딜러라 Diana의 마저 세팅을 무시합니다. 그림자로 Diana의 스킬을 회피하며 처치합니다." }
+  ]},
+  "Draven": { role: "원딜", counters: [
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Draven이 도끼를 잡으러 이동할 때 견제합니다. 함정으로 도끼 낙하 지점을 차단합니다." },
+    { name: "Jinx", severity: "강함", reason: "후반 스케일링이 Draven을 앞서며 로켓 광역으로 유리한 교환을 합니다. Draven의 초반 이점을 버티면 후반 역전됩니다." },
+    { name: "Sivir", severity: "강함", reason: "W 주문 방어막으로 Draven의 Q 데미지를 흡수합니다. 빠른 웨이브 클리어로 Draven의 포지셔닝을 방해합니다." },
+    { name: "Yasuo", severity: "강함", reason: "바람 벽으로 Draven의 모든 도끼 투사체를 막아냅니다. Draven의 가장 큰 약점인 투사체 의존성을 완전히 무력화합니다." }
+  ]},
+  "Ekko": { role: "미드/정글", counters: [
+    { name: "Lissandra", severity: "매우 강함", reason: "자가 동결로 Ekko의 R 역시간 사용 순간을 처벌합니다. CC 사슬로 Ekko의 스킬 연계를 끊습니다." },
+    { name: "Viktor", severity: "강함", reason: "W 억제 필드로 Ekko의 기동성을 봉쇄합니다. 안전한 거리에서 지속 딜로 Ekko를 압박합니다." },
+    { name: "Zilean", severity: "강함", reason: "폭탄 스턴으로 Ekko의 진입을 방해합니다. 궁극기가 Ekko의 R과 비슷한 역할을 하며 팀원을 구출합니다." },
+    { name: "Malzahar", severity: "강함", reason: "억압 궁극기로 Ekko의 모든 행동을 봉쇄합니다. R을 사용하려 해도 억압 중에는 불가능합니다." }
+  ]},
+  "Ezreal": { role: "원딜", counters: [
+    { name: "Draven", severity: "매우 강함", reason: "Ezreal의 포킹에 맞교환을 해도 Draven의 딜이 더 높습니다. 이동기가 없는 Draven도 Ezreal의 W 느린 공격속도 디버프를 두려워하지 않습니다." },
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Ezreal보다 유리한 자리에서 견제합니다. E 도약으로 Ezreal의 Q를 피할 수 없어도 함정으로 도주를 차단합니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "러브탭으로 Ezreal의 짧은 교환 때도 높은 딜을 줍니다. Ezreal의 Q 비빔 스타일을 봉쇄하는 서포터와 함께하면 더 강합니다." },
+    { name: "Veigar", severity: "강함", reason: "궁극기가 Ezreal의 Q 적중 패시브 스택을 역이용합니다. E 이벤트 호라이즌으로 Ezreal의 E 이동을 예측해 가둡니다." }
+  ]},
+  "Fiora": { role: "탑", counters: [
+    { name: "Malphite", severity: "매우 강함", reason: "아머가 너무 높아 Fiora의 Q 트루 데미지 비율을 제외한 나머지 딜이 거의 없습니다. 궁극기 노크업으로 Fiora를 일방적으로 CC 겁니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Fiora의 리포스트 사용을 원천 차단합니다. 높은 체력과 리젠으로 Fiora의 지속 포킹을 버팁니다." },
+    { name: "Volibear", severity: "강함", reason: "번개 폭풍으로 Fiora가 리포스트를 사용하기 어려운 상황을 만듭니다. 높은 HP와 번개 패시브로 교전을 지배합니다." },
+    { name: "Irelia", severity: "강함", reason: "스택이 풀리면 Fiora의 리포스트 타이밍을 섞어가며 교란합니다. 연속 Q로 Fiora의 스킬 판단을 혼란스럽게 합니다." }
+  ]},
+  "Fizz": { role: "미드", counters: [
+    { name: "Malzahar", severity: "압도적", reason: "억압 궁극기로 Fizz를 완전히 봉쇄합니다. W 허공의 군주도 피해를 주며 패시브 방어막이 Fizz의 버스트 일부를 흡수합니다." },
+    { name: "Lissandra", severity: "매우 강함", reason: "자가 동결로 Fizz의 W 버스트를 무효화합니다. 진입 후 역으로 Fizz를 처리할 수 있습니다." },
+    { name: "Galio", severity: "강함", reason: "높은 마저로 Fizz의 버스트를 흡수합니다. W 도발로 Fizz를 역으로 CC 걸어 처리합니다." },
+    { name: "Vex", severity: "강함", reason: "패시브 공포로 Fizz의 이동기 사용 후 공포를 겁니다. Q 투사체가 Fizz의 W 무적을 통과합니다." }
+  ]},
+  "Gangplank": { role: "탑", counters: [
+    { name: "Darius", severity: "매우 강함", reason: "Gangplank의 출혈 처치 취소를 자신도 체력 리젠이 빠르며 적극적으로 교환합니다. 갈고리로 잡아 일방적인 교환을 강요합니다." },
+    { name: "Irelia", severity: "강함", reason: "Gangplank의 오렌지 사용 타이밍을 섞은 연속 Q로 교란합니다. 스택 버프 상태에서 Gangplank를 압도합니다." },
+    { name: "Urgot", severity: "강함", reason: "원거리 공격으로 Gangplank의 약한 이동 능력을 이용해 지속 견제합니다. 집행 궁극기가 Gangplank를 처단합니다." },
+    { name: "Renekton", severity: "강함", reason: "초반 강한 교환 능력으로 Gangplank가 스택을 못 쌓게 방해합니다. 분노 게이지 E로 Gangplank의 CC를 무시하고 돌진합니다." }
+  ]},
+  "Garen": { role: "탑", counters: [
+    { name: "Vayne", severity: "압도적", reason: "트루 데미지가 Garen의 높은 아머를 완전히 무시합니다. 텀블로 Garen의 Q 침묵 추격을 쉽게 피합니다." },
+    { name: "Quinn", severity: "매우 강함", reason: "원거리 공격과 실명으로 Garen이 접근하기 어렵게 만듭니다. 하늘을 나는 이동기로 Garen의 E 회전을 완전히 피합니다." },
+    { name: "Kennen", severity: "강함", reason: "원거리 전기 포킹으로 Garen이 사거리 안에 오기 전에 지속 견제합니다. 기절로 Garen의 교전 타이밍을 방해합니다." },
+    { name: "Kayle", severity: "강함", reason: "후반 인벌러블로 Garen의 처형 궁극기를 완전히 무효화합니다. 원거리 전환 후 Garen을 안전하게 견제합니다." }
+  ]},
+  "Graves": { role: "정글", counters: [
+    { name: "Kha'Zix", severity: "강함", reason: "Graves보다 빠른 정글 이동성과 단독 처치 능력으로 우위를 점합니다. Graves 혼자 있을 때 진화 Q로 순삭합니다." },
+    { name: "Lee Sin", severity: "강함", reason: "초반 갱킹 능력이 Graves보다 높아 초반 이득을 먼저 챙깁니다. Q 시전 후 W 보호막으로 교환 딜도 효율적입니다." },
+    { name: "Nidalee", severity: "강함", reason: "장거리 창 포킹으로 Graves를 정글에서 견제합니다. 빠른 이동속도와 정글 속도로 Graves보다 먼저 캠프를 먹습니다." },
+    { name: "Hecarim", severity: "강함", reason: "빠른 이동속도로 Graves의 정글을 침범합니다. 강한 돌진으로 Graves의 교전 거리 조절을 무너뜨립니다." }
+  ]},
+  "Irelia": { role: "탑/미드", counters: [
+    { name: "Malphite", severity: "압도적", reason: "슬로우와 높은 아머로 Irelia의 Q 스택 쌓기를 방해합니다. 궁극기 노크업으로 Irelia의 진입을 역이용합니다." },
+    { name: "Renekton", severity: "매우 강함", reason: "Irelia의 스택이 쌓이기 전 초반에 강한 교환 능력으로 압살합니다. 분노 E로 Irelia의 W 스턴을 무시합니다." },
+    { name: "Jax", severity: "강함", reason: "E 도약 반격으로 Irelia의 Q 연속 진입을 막습니다. 막상막하지만 후반 Jax의 스케일링이 앞섭니다." },
+    { name: "Camille", severity: "강함", reason: "E 착지 후 Q 트루 데미지로 Irelia를 처벌합니다. W 훅으로 Irelia의 블레이드 서지 이동을 방해합니다." }
+  ]},
+  "Janna": { role: "서포터", counters: [
+    { name: "Blitzcrank", severity: "강함", reason: "Janna의 낮은 체력을 훅으로 잡아 처치합니다. Janna의 토네이도보다 훅이 더 빠르게 이니시를 만듭니다." },
+    { name: "Thresh", severity: "강함", reason: "다양한 CC와 랜턴 구출로 Janna보다 팀에 더 많은 것을 제공합니다. 훅으로 Janna를 직접 잡아냅니다." },
+    { name: "Leona", severity: "강함", reason: "Janna를 직접 잡아 CC 사슬을 넣어 처치합니다. 강한 이니시로 Janna의 방어적 플레이를 뚫어냅니다." },
+    { name: "Nautilus", severity: "강함", reason: "훅과 다중 CC로 Janna가 궁극기를 쓸 여유를 주지 않습니다. 강력한 이니시로 Janna의 팀을 지속 압박합니다." }
+  ]},
+  "Jax": { role: "탑/정글", counters: [
+    { name: "Malphite", severity: "압도적", reason: "아머가 높아 Jax의 AA 기반 딜이 거의 들어가지 않습니다. 궁극기 노크업으로 Jax의 E 반격 타이밍을 무시합니다." },
+    { name: "Fiora", severity: "매우 강함", reason: "Jax의 E 반격 타이밍에 리포스트를 사용해 스턴을 역이용합니다. 지속 딜과 회복으로 장기전에서 Jax를 압도합니다." },
+    { name: "Volibear", severity: "강함", reason: "패시브 번개가 Jax의 높은 AA 빈도를 역이용합니다. 높은 내구성으로 Jax의 교환을 버텨냅니다." },
+    { name: "Camille", severity: "강함", reason: "E 착지 후 Q 트루 데미지 구간이 Jax의 AA 의존성을 카운터칩니다. 이동기로 Jax의 E 반격을 회피합니다." }
+  ]},
+  "Jinx": { role: "원딜", counters: [
+    { name: "Draven", severity: "매우 강함", reason: "초반 Jinx가 스택을 쌓기 전에 강한 교환으로 압살합니다. Jinx의 느린 이동속도를 이용해 일방적인 교환을 강요합니다." },
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Jinx가 사거리 밖에서 지속 포킹합니다. 함정으로 Jinx의 느린 이동을 더욱 제약합니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "궁극기가 Jinx의 기동성 없는 포지셔닝을 처벌합니다. 러브탭으로 라인전 내내 높은 교환 효율을 유지합니다." },
+    { name: "Tristana", severity: "강함", reason: "로켓 점프로 Jinx에게 근접해 폭탄을 붙이면 도망갈 수 없습니다. 사거리가 후반에 같아져 불리한 자리를 강요합니다." }
+  ]},
+  "Kaisa": { role: "원딜", counters: [
+    { name: "Miss Fortune", severity: "강함", reason: "라인전 포킹 능력이 Kai'Sa보다 강합니다. 진화 아이템을 갖추기 전 초반에 압박해 성장을 방해합니다." },
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Kai'Sa가 자신의 사거리 안에 들어오기 전에 지속 견제합니다. 진화 E 점프를 함정으로 차단합니다." },
+    { name: "Draven", severity: "강함", reason: "Kai'Sa가 아이템을 갖추기 전 초반에 폭발적인 딜로 앞서나갑니다." },
+    { name: "Sivir", severity: "강함", reason: "W 주문 방어막으로 Kai'Sa의 R 진입 이후 버스트 일부를 흡수합니다. 빠른 라인 클리어로 Kai'Sa의 포킹 기회를 줄입니다." }
+  ]},
+  "Kassadin": { role: "미드", counters: [
+    { name: "Veigar", severity: "매우 강함", reason: "E 이벤트 호라이즌으로 Kassadin의 점멸 점프 위치를 예측해 가둡니다. 마법 저항 무시 궁극기로 Kassadin을 즉사시킵니다." },
+    { name: "Fizz", severity: "강함", reason: "Kassadin의 약한 초반 파워를 이용해 레벨 1-5에 압살합니다. 기동성이 비슷하거나 높아 후반에도 대등합니다." },
+    { name: "Pantheon", severity: "강함", reason: "초반 강한 개입 능력으로 Kassadin이 6레벨 전에 일방적으로 압박합니다. Q 실드를 파괴하고 E 근거리 딜로 Kassadin을 지배합니다." },
+    { name: "Talon", severity: "강함", reason: "Kassadin의 약한 초반에 강한 교환으로 성장을 방해합니다. AD 딜러라 Kassadin의 마저 세팅을 무시합니다." }
+  ]},
+  "Katarina": { role: "미드", counters: [
+    { name: "Lissandra", severity: "압도적", reason: "단검 위에 얼음 발톱 E로 Katarina를 CC 걸어 단검 Q 회수를 방해합니다. 자가 동결로 Katarina의 R 채널을 중단시킵니다." },
+    { name: "Diana", severity: "매우 강함", reason: "R 고정 CC로 Katarina의 W 이동 후 R 시전을 방해합니다. 교전 능력이 Katarina보다 안정적입니다." },
+    { name: "Malzahar", severity: "매우 강함", reason: "억압 궁극기로 Katarina의 R 채널을 즉시 중단시킵니다. Katarina의 리셋 패턴도 봉쇄합니다." },
+    { name: "Vex", severity: "강함", reason: "공포 패시브가 Katarina의 이동기 사용마다 발동됩니다. 음울한 존재 W로 단검 콤보 중에 CC를 겁니다." }
+  ]},
+  "Kayle": { role: "탑/미드", counters: [
+    { name: "Darius", severity: "매우 강함", reason: "Kayle이 원거리로 전환하기 전 레벨 1-10 사이에 강한 교환으로 압살합니다. 출혈 도트가 Kayle의 회복을 뚫습니다." },
+    { name: "Renekton", severity: "강함", reason: "Kayle의 원거리 전환 전 초반 레인전을 완전히 지배합니다. 분노 E로 Kayle의 CC를 무시합니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Kayle의 스킬을 끊고 Q+E+R 콤보로 Kayle을 처치합니다. 인벌러블로 Garen의 처형을 막아도 그 전에 죽습니다." },
+    { name: "Pantheon", severity: "강함", reason: "Kayle의 원거리 전환 전에 강한 포킹과 이니시로 성장을 방해합니다. E 방어막으로 Kayle의 딜을 흡수합니다." }
+  ]},
+  "Kha'Zix": { role: "정글", counters: [
+    { name: "Rammus", severity: "압도적", reason: "아머가 극도로 높아 Kha'Zix의 AD 버스트를 무력화합니다. Q 도발로 Kha'Zix를 역으로 잡아 처치합니다." },
+    { name: "Rengar", severity: "강함", reason: "대칭적인 어쌔신 교전에서 Rengar가 먼저 이니시를 가져갑니다. Kha'Zix가 고립되지 않은 Rengar를 처치하기 어렵습니다." },
+    { name: "Warwick", severity: "강함", reason: "핏냄새 탐지로 체력이 낮은 Kha'Zix를 추적합니다. R 억압으로 Kha'Zix의 점프를 봉쇄합니다." },
+    { name: "Vi", severity: "강함", reason: "R 억압으로 Kha'Zix의 이동기를 봉쇄합니다. 아머 관통 E로 Kha'Zix의 물리 데미지를 역이용하지 않습니다." }
+  ]},
+  "LeBlanc": { role: "미드", counters: [
+    { name: "Malzahar", severity: "압도적", reason: "억압 궁극기로 LeBlanc의 모든 이동을 봉쇄합니다. 패시브 방어막이 첫 번째 버스트를 흡수합니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 LeBlanc의 W 딜을 흡수합니다. 후반에는 Kassadin이 LeBlanc보다 더 강한 버스트를 가집니다." },
+    { name: "Galio", severity: "강함", reason: "높은 마저와 체력으로 LeBlanc의 버스트를 버텨냅니다. W 도발로 LeBlanc를 잡아 처치합니다." },
+    { name: "Diana", severity: "강함", reason: "달빛 방어막으로 LeBlanc의 딜 일부를 흡수합니다. R 고정으로 LeBlanc의 이동기를 봉쇄하고 처치합니다." }
+  ]},
+  "Lee Sin": { role: "정글", counters: [
+    { name: "Graves", severity: "강함", reason: "단거리 교전에서 Graves의 폭발 딜이 Lee Sin을 압도합니다. 높은 체력 대비 딜로 Lee Sin의 교환 효율을 낮춥니다." },
+    { name: "Kha'Zix", severity: "강함", reason: "Lee Sin이 혼자 있을 때 진화 Q로 순삭합니다. 고립 증폭 딜로 Lee Sin의 낮은 체력을 노립니다." },
+    { name: "Elise", severity: "강함", reason: "초반 정글 싸움에서 Elise의 CC와 처치 능력이 Lee Sin과 대등합니다. 거미 형태 진입 후 Q로 Lee Sin을 처리합니다." },
+    { name: "Nidalee", severity: "강함", reason: "창 포킹으로 Lee Sin을 정글 내에서 지속 견제합니다. 빠른 이동과 낮은 마나 소비로 Lee Sin보다 자원 효율이 높습니다." }
+  ]},
+  "Leona": { role: "서포터", counters: [
+    { name: "Morgana", severity: "압도적", reason: "블랙 실드로 Leona의 모든 CC를 완전히 무효화합니다. Leona의 CC가 막히면 딜이 0에 수렴합니다." },
+    { name: "Lulu", severity: "강함", reason: "폴리모프로 Leona의 진입을 방해하고 방어막으로 아군을 보호합니다. Leona의 강한 이니시를 계속 좌절시킵니다." },
+    { name: "Janna", severity: "강함", reason: "궁극기로 Leona의 이니시를 뒤집습니다. 토네이도로 진입을 공중에서 차단합니다." },
+    { name: "Nami", severity: "강함", reason: "버블 CC와 넉백으로 Leona의 이니시를 방해합니다. 강물 해방으로 Leona의 팀 전체를 슬로우시켜 역습합니다." }
+  ]},
+  "Lux": { role: "미드/서포터", counters: [
+    { name: "Zed", severity: "매우 강함", reason: "그림자로 Lux의 스킬을 회피하며 근접합니다. Lux가 Q를 빗나가면 즉시 사망하는 구조입니다." },
+    { name: "Fizz", severity: "강함", reason: "W 점프로 Lux의 Q와 E를 모두 회피합니다. 근접하면 Lux가 도망갈 수단이 없습니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프로 Lux에게 즉시 근접해 처치합니다. Lux의 긴 스킬 쿨다운을 역이용합니다." },
+    { name: "LeBlanc", severity: "강함", reason: "다중 이동기로 Lux의 모든 스킬을 회피합니다. Lux보다 짧은 교환으로 버스트를 넣고 빠져나갑니다." }
+  ]},
+  "Malphite": { role: "탑", counters: [
+    { name: "Vayne", severity: "압도적", reason: "트루 데미지로 Malphite의 높은 아머를 완전히 무시합니다. Malphite는 Vayne에게 할 수 있는 것이 거의 없습니다." },
+    { name: "Gwen", severity: "매우 강함", reason: "W 무적 구간이 Malphite의 스킬과 AA를 모두 무효화합니다. 마법 데미지로 Malphite의 아머 스택을 우회합니다." },
+    { name: "Kennen", severity: "강함", reason: "원거리 번개 포킹으로 Malphite가 접근하기 어렵게 만듭니다. 기절 CC가 Malphite의 궁극기 사용을 방해합니다." },
+    { name: "Sylas", severity: "강함", reason: "Malphite의 강력한 궁극기를 훔쳐서 역이용합니다. 마법 데미지라 Malphite의 아머가 의미가 없습니다." }
+  ]},
+  "Malzahar": { role: "미드", counters: [
+    { name: "Kassadin", severity: "매우 강함", reason: "마력 방어막으로 Malzahar의 E 침묵과 딜을 흡수합니다. 후반 점멸 점프로 Malzahar를 지속 위협합니다." },
+    { name: "Fizz", severity: "강함", reason: "W 점프로 Malzahar의 E를 회피합니다. 근접에서 버스트로 억압 궁극기 전에 처치합니다." },
+    { name: "Zed", severity: "강함", reason: "그림자로 Malzahar의 억압 궁극기를 이동으로 회피합니다. AD 딜러라 Malzahar의 마저를 무시합니다." },
+    { name: "Cleanse 템 원딜", severity: "강함", reason: "QSS로 Malzahar의 억압 궁극기를 즉시 해제합니다. 억압이 해제되면 Malzahar는 아무 것도 할 수 없습니다." }
+  ]},
+  "Master Yi": { role: "정글", counters: [
+    { name: "Rammus", severity: "압도적", reason: "도발로 Master Yi를 잡고 반격 아머로 역딜을 줍니다. Master Yi가 QSS를 사도 반격 데미지는 피할 수 없습니다." },
+    { name: "Jax", severity: "매우 강함", reason: "E 반격으로 Master Yi의 AA를 3초간 완전히 봉쇄합니다. Q 알파스트라이크보다 E 타이밍을 잘 읽으면 일방적으로 승리합니다." },
+    { name: "Warwick", severity: "강함", reason: "R 억압으로 Master Yi의 알파스트라이크를 봉쇄합니다. 체력이 낮을 때 핏냄새로 추적해 처치합니다." },
+    { name: "Trundle", severity: "강함", reason: "기둥으로 Master Yi의 이동을 방해하고 저주 궁으로 Master Yi의 버프를 빼앗습니다. 교전에서 지속적으로 강점을 가집니다." }
+  ]},
+  "Mordekaiser": { role: "탑", counters: [
+    { name: "Vayne", severity: "압도적", reason: "트루 데미지로 Mordekaiser의 방어막과 높은 HP를 무시합니다. 1:1 사후 세계에서도 Vayne이 이길 수 있습니다." },
+    { name: "Fiora", severity: "매우 강함", reason: "리포스트로 Mordekaiser의 스킬을 무효화하고 역스턴을 넣습니다. 바이탈 시스템이 Mordekaiser의 방어막을 무시합니다." },
+    { name: "Gwen", severity: "강함", reason: "W 무적으로 Mordekaiser의 스킬을 무효화합니다. 사후 세계에서도 W로 스킬을 피하며 싸웁니다." },
+    { name: "Olaf", severity: "강함", reason: "궁극기로 Mordekaiser의 모든 CC와 방어막을 무시합니다. 사후 세계에서도 올인으로 Mordekaiser를 처치합니다." }
+  ]},
+  "Nasus": { role: "탑", counters: [
+    { name: "Vayne", severity: "압도적", reason: "트루 데미지로 Nasus의 높은 HP를 무시합니다. 이동기로 Nasus의 W 슬로우를 회피하며 지속 딜을 넣습니다." },
+    { name: "Gnar", severity: "매우 강함", reason: "원거리로 Nasus의 Q 파밍을 계속 방해합니다. 느린 Nasus를 원거리에서 일방적으로 견제합니다." },
+    { name: "Quinn", severity: "강함", reason: "실명으로 Nasus의 Q를 완전히 차단합니다. 원거리 포킹으로 Nasus가 스택을 쌓을 수 없게 합니다." },
+    { name: "Teemo", severity: "강함", reason: "실명으로 Nasus의 Q를 차단하고 독 데미지로 지속 견제합니다. 이동속도로 Nasus를 안전하게 포킹합니다." }
+  ]},
+  "Nautilus": { role: "서포터", counters: [
+    { name: "Morgana", severity: "압도적", reason: "블랙 실드로 Nautilus의 훅과 패시브 앵커 CC를 완전히 무효화합니다." },
+    { name: "Janna", severity: "강함", reason: "궁극기로 Nautilus의 이니시를 뒤집습니다. 토네이도로 훅을 시도할 때 공중으로 날려버립니다." },
+    { name: "Lulu", severity: "강함", reason: "폴리모프로 Nautilus의 훅 후속 이니시를 방해합니다. 방어막으로 아군의 생존을 돕습니다." },
+    { name: "Karma", severity: "강함", reason: "R+W 억제 실로 Nautilus의 이동을 봉쇄합니다. 긴 사거리 포킹으로 Nautilus가 훅을 쓸 자리를 빼앗습니다." }
+  ]},
+  "Nidalee": { role: "정글", counters: [
+    { name: "Lee Sin", severity: "강함", reason: "Lee Sin의 감각 패시브로 Nidalee의 함정을 감지합니다. 강한 초반 교전 능력으로 Nidalee를 제압합니다." },
+    { name: "Vi", severity: "강함", reason: "R 억압으로 Nidalee의 도주를 봉쇄합니다. 아머 관통으로 Nidalee의 낮은 체력을 이용해 처치합니다." },
+    { name: "Warwick", severity: "강함", reason: "핏냄새로 부상당한 Nidalee를 추적합니다. 변신 형태의 높은 이동속도로 Nidalee를 따라잡습니다." },
+    { name: "Elise", severity: "강함", reason: "창 포킹보다 E 내려오기 처치 패턴이 일관적으로 강합니다. 거미 진입으로 Nidalee의 도주 경로를 차단합니다." }
+  ]},
+  "Nocturne": { role: "정글", counters: [
+    { name: "Lee Sin", severity: "강함", reason: "초반 갱킹 능력과 교전 능력이 Nocturne을 앞섭니다. R 역습으로 Nocturne의 이니시를 뒤집습니다." },
+    { name: "Kha'Zix", severity: "강함", reason: "고립 딜로 Nocturne의 낮은 이동속도를 이용해 처치합니다. 이동기로 Nocturne의 날개 슬로우를 회피합니다." },
+    { name: "Kindred", severity: "강함", reason: "원거리 공격으로 Nocturne의 두려움 스킬 사거리 밖에서 딜을 넣습니다. 궁극기로 팀원을 Nocturne의 처형으로부터 구출합니다." },
+    { name: "Hecarim", severity: "강함", reason: "빠른 이동속도로 Nocturne보다 오브젝트를 먼저 챙깁니다. 강한 돌진 이니시로 Nocturne의 궁극기 효과를 앞섭니다." }
+  ]},
+  "Orianna": { role: "미드", counters: [
+    { name: "Zed", severity: "매우 강함", reason: "그림자로 Orianna의 공 위치와 무관하게 근접합니다. Orianna의 낮은 기동성을 이용해 일방적인 버스트를 넣습니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프로 Orianna에게 빠르게 접근해 처치합니다. 단도 아우라를 이용한 짧은 교환이 효과적입니다." },
+    { name: "LeBlanc", severity: "강함", reason: "다중 이동기로 Orianna의 공 위치를 무효화합니다. 짧은 교전에서 Orianna보다 더 높은 버스트를 가집니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Orianna의 공 딜을 흡수합니다. 후반 R 점멸로 Orianna의 공 위치를 지속 교란합니다." }
+  ]},
+  "Pantheon": { role: "탑/미드/서포터", counters: [
+    { name: "Malphite", severity: "강함", reason: "아머가 높아 Pantheon의 Q 트루 데미지를 제외한 딜이 감소합니다. 궁극기 노크업으로 Pantheon의 이니시를 역이용합니다." },
+    { name: "Fiora", severity: "강함", reason: "리포스트로 Pantheon의 E 근거리 돌진을 무효화하고 역스턴을 넣습니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Pantheon의 스킬 연계를 끊습니다. 높은 체력 리젠으로 라인전을 버팁니다." },
+    { name: "Wukong", severity: "강함", reason: "분신으로 Pantheon의 CC를 속여 넘깁니다. 사이클론 궁극기로 Pantheon의 진입을 역이용합니다." }
+  ]},
+  "Renekton": { role: "탑", counters: [
+    { name: "Illaoi", severity: "매우 강함", reason: "Renekton의 돌진을 유도해 영혼 잡기로 역딜을 줍니다. Illaoi의 높은 체력과 리젠이 Renekton의 교환 능력을 상쇄합니다." },
+    { name: "Gwen", severity: "강함", reason: "W 무적으로 Renekton의 핵심 스킬을 무효화합니다. 지속 딜이 Renekton의 높은 초반 피해를 버텨냅니다." },
+    { name: "Malphite", severity: "강함", reason: "아머가 높아 Renekton의 물리 딜이 감소합니다. 후반에 Renekton은 Malphite를 넘을 수 없습니다." },
+    { name: "Sion", severity: "강함", reason: "높은 체력과 방어막으로 Renekton의 교환을 버팁니다. Q 충전 공격으로 Renekton을 노크업시켜 역교환합니다." }
+  ]},
+  "Riven": { role: "탑", counters: [
+    { name: "Malphite", severity: "압도적", reason: "아머가 너무 높아 Riven의 AD 버스트가 들어가지 않습니다. 궁극기 노크업으로 Riven의 스킬 콤보를 완전히 끊습니다." },
+    { name: "Renekton", severity: "매우 강함", reason: "Riven의 스킬이 쿨다운 중일 때 분노를 사용해 역교환합니다. Riven보다 안정적인 교환 능력을 가집니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Riven의 스킬 연계를 강제로 끊습니다. Riven의 방어막 스킬이 없을 때 E로 침묵을 넣습니다." },
+    { name: "Darius", severity: "강함", reason: "Riven의 방어막이 쿨다운일 때 E로 잡아 일방적인 교환을 강요합니다. 출혈 도트가 Riven의 회복을 무력화합니다." }
+  ]},
+  "Ryze": { role: "미드", counters: [
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Ryze의 E+Q 딜을 흡수합니다. 후반 점멸 점프로 Ryze를 지속 교란합니다." },
+    { name: "LeBlanc", severity: "강함", reason: "이동기로 Ryze의 W 올가미 CC를 회피합니다. Ryze의 낮은 기동성을 이용해 짧은 교전 후 빠져나갑니다." },
+    { name: "Talon", severity: "강함", reason: "AD 딜러라 Ryze의 마저 세팅을 무시합니다. Ryze의 W 올가미를 벽 점프로 회피합니다." },
+    { name: "Zed", severity: "강함", reason: "그림자로 Ryze의 CC를 회피하고 근접에서 폭딜을 넣습니다. AD라 Ryze의 마저가 아무 의미가 없습니다." }
+  ]},
+  "Samira": { role: "원딜", counters: [
+    { name: "Miss Fortune", severity: "매우 강함", reason: "Samira가 근접하기 전에 원거리 포킹으로 체력을 소모시킵니다. 궁극기가 Samira의 포지셔닝 실수를 처벌합니다." },
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Samira가 근접하기 전에 지속 견제합니다. 함정으로 Samira의 돌진 경로를 차단합니다." },
+    { name: "Ashe", severity: "강함", reason: "슬로우와 CC로 Samira의 기동성을 봉쇄합니다. 원거리에서 견제해 Samira가 원하는 근접 교전을 허용하지 않습니다." },
+    { name: "Jhin", severity: "강함", reason: "4탄 크리티컬로 Samira의 포지셔닝 실수를 치명타로 처벌합니다. W 덫으로 Samira의 돌진 방향을 예측합니다." }
+  ]},
+  "Sett": { role: "탑/서포터", counters: [
+    { name: "Vayne", severity: "매우 강함", reason: "트루 데미지로 Sett의 높은 HP를 무시합니다. 이동기로 Sett의 Q 돌진을 회피합니다." },
+    { name: "Darius", severity: "강함", reason: "Sett의 W 축적을 E 갈고리로 끌어와 방해합니다. 양쪽 다 근접 교환이 강하나 Darius의 출혈 도트가 장기전에서 유리합니다." },
+    { name: "Gwen", severity: "강함", reason: "W 무적으로 Sett의 W 주먹 데미지를 완전히 무효화합니다. 마법 데미지라 Sett의 아머를 우회합니다." },
+    { name: "Fiora", severity: "강함", reason: "리포스트로 Sett의 Q 첫 번째 타격을 무효화합니다. 바이탈 공략으로 짧은 교전에도 높은 피해를 줍니다." }
+  ]},
+  "Syndra": { role: "미드", counters: [
+    { name: "Zed", severity: "매우 강함", reason: "그림자로 Syndra의 E 스턴을 회피합니다. Syndra의 낮은 기동성을 이용해 근접에서 일방적인 버스트를 넣습니다." },
+    { name: "LeBlanc", severity: "강함", reason: "다중 이동기로 Syndra의 CC를 회피합니다. 짧은 교전 후 빠져나가 Syndra가 조준할 시간을 주지 않습니다." },
+    { name: "Fizz", severity: "강함", reason: "W 무적으로 Syndra의 R 모든 공 데미지를 회피합니다. 이동기로 E 스턴도 피하며 근접합니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프로 Syndra에게 빠르게 접근해 처치합니다. AD라 Syndra의 마저를 무시합니다." }
+  ]},
+  "Thresh": { role: "서포터", counters: [
+    { name: "Morgana", severity: "압도적", reason: "블랙 실드로 Thresh의 훅과 모든 CC를 완전히 차단합니다. Thresh의 유일한 장점이 완전히 무력화됩니다." },
+    { name: "Blitzcrank", severity: "강함", reason: "Thresh보다 더 빠른 훅으로 이니시를 먼저 가져갑니다. Thresh의 낮은 체력을 이용해 직접 잡아냅니다." },
+    { name: "Lulu", severity: "강함", reason: "폴리모프로 Thresh의 훅 후 진입을 방해합니다. 방어막으로 아군을 구출합니다." },
+    { name: "Janna", severity: "강함", reason: "토네이도로 Thresh의 훅을 공중에서 차단합니다. 방어적 플레이로 Thresh의 공격적 이니시를 무력화합니다." }
+  ]},
+  "Tryndamere": { role: "탑", counters: [
+    { name: "Malzahar", severity: "압도적", reason: "억압 궁극기로 Tryndamere의 불멸 궁극기 지속 시간을 낭비시킵니다. 억압이 끝나면 Tryndamere는 즉사합니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Tryndamere의 궁극기 사용을 방해합니다. 높은 아머와 리젠으로 Tryndamere의 딜을 버팁니다." },
+    { name: "Jax", severity: "강함", reason: "E 반격으로 Tryndamere의 AA를 3초간 차단합니다. Tryndamere의 불멸 시간 동안 E를 아껴두었다가 카운터합니다." },
+    { name: "Teemo", severity: "강함", reason: "실명으로 Tryndamere의 Q 크리티컬 AA를 완전히 무효화합니다. 버섯으로 도주도 차단합니다." }
+  ]},
+  "Twisted Fate": { role: "미드", counters: [
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Twisted Fate의 스킬 데미지를 흡수합니다. 후반 점멸 점프로 TF보다 빠르게 이동해 역압박합니다." },
+    { name: "LeBlanc", severity: "강함", reason: "이동기로 Twisted Fate의 금패 스턴 타이밍을 회피합니다. TF보다 짧은 교전에서 더 높은 버스트를 가집니다." },
+    { name: "Talon", severity: "강함", reason: "전 맵 이동 궁으로 TF의 글로벌 궁을 역으로 카운터합니다. AD 버스트로 TF를 즉시 처치합니다." },
+    { name: "Katarina", severity: "강함", reason: "TF의 글로벌 궁에 맞불로 Katarina도 로밍이 강합니다. 진입 후 빠른 리셋 딜로 TF를 처치합니다." }
+  ]},
+  "Vayne": { role: "원딜/탑", counters: [
+    { name: "Caitlyn", severity: "매우 강함", reason: "긴 사거리로 Vayne이 근접하기 전에 지속 포킹합니다. 함정으로 Vayne의 도주 경로를 차단합니다." },
+    { name: "Draven", severity: "강함", reason: "Vayne이 트루 데미지를 활성화하기 전에 초반 강한 딜로 압박합니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "라인전 포킹이 Vayne보다 강해 성장을 방해합니다. 궁극기가 Vayne의 은신과 텀블을 처벌합니다." },
+    { name: "Jinx", severity: "강함", reason: "로켓 사거리로 Vayne이 근접하기 어렵게 만듭니다. 후반 스케일링에서 Vayne과 대등하게 경쟁합니다." }
+  ]},
+  "Veigar": { role: "미드", counters: [
+    { name: "Fizz", severity: "압도적", reason: "W 점프로 Veigar의 E 이벤트 호라이즌 우리를 탈출합니다. 기동성으로 Veigar의 모든 스킬을 회피하며 근접합니다." },
+    { name: "LeBlanc", severity: "매우 강함", reason: "다중 이동기로 Veigar의 E 우리를 탈출합니다. Veigar의 짧은 교전 능력을 LeBlanc의 기동성이 압도합니다." },
+    { name: "Zed", severity: "강함", reason: "그림자로 Veigar의 스킬을 회피하고 물리 딜로 마저를 우회합니다. E 우리도 그림자 이동으로 탈출합니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프로 Veigar에게 즉시 근접해 처치합니다. E 우리를 벽 점프로 탈출합니다." }
+  ]},
+  "Viktor": { role: "미드", counters: [
+    { name: "Zed", severity: "매우 강함", reason: "그림자로 Viktor의 W 억제 필드를 회피합니다. Viktor의 낮은 기동성을 이용해 근접에서 처치합니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프로 Viktor에게 빠르게 접근합니다. AD 딜러라 Viktor의 마저를 무시합니다." },
+    { name: "Fizz", severity: "강함", reason: "W 점프로 Viktor의 W 필드를 회피합니다. 이동기로 Viktor의 모든 스킬 조준을 방해합니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Viktor의 레이저 딜을 흡수합니다. 후반 점멸 점프로 Viktor를 계속 교란합니다." }
+  ]},
+  "Vladimir": { role: "탑/미드", counters: [
+    { name: "Cassiopeia", severity: "매우 강함", reason: "Vladimir의 W 흡혈 타이밍에 독 스택을 올려 효율적인 딜 교환을 합니다. 후반 지속 딜이 Vladimir를 압도합니다." },
+    { name: "Ignite 올인 서포터", severity: "강함", reason: "이그나이트가 Vladimir의 회복을 크게 감소시킵니다. Vladimir의 핵심 강점인 회복이 무력화됩니다." },
+    { name: "Irelia", severity: "강함", reason: "W 타이밍을 끊어가며 다중 Q 공격으로 Vladimir의 풀 스택을 방해합니다. 스택 버프 상태에서 Vladimir를 앞섭니다." },
+    { name: "Garen", severity: "강함", reason: "침묵으로 Vladimir의 W 사용 타이밍을 끊습니다. 높은 리젠으로 Vladimir의 포킹을 버텨냅니다." }
+  ]},
+  "Warwick": { role: "정글", counters: [
+    { name: "Kha'Zix", severity: "강함", reason: "Warwick를 고립시켜 진화 Q로 순삭합니다. Warwick의 낮은 초반 이동속도를 이용해 정글을 침범합니다." },
+    { name: "Graves", severity: "강함", reason: "단거리 폭발 딜로 Warwick의 생명력 흡수를 앞지릅니다. 높은 DPS로 Warwick의 회복을 초월합니다." },
+    { name: "Camille", severity: "강함", reason: "W 트루 데미지로 Warwick의 생명력 흡수를 압도합니다. 이동기로 Warwick의 억압 궁을 예측해 회피합니다." },
+    { name: "Rammus", severity: "강함", reason: "반격 아머로 Warwick의 AA 기반 생명력 흡수를 역이용합니다. 도발로 Warwick를 잡아 역딜합니다." }
+  ]},
+  "Yasuo": { role: "미드/탑", counters: [
+    { name: "Malphite", severity: "압도적", reason: "아머가 높아 Yasuo의 AD 딜이 거의 들어가지 않습니다. 궁극기 노크업이 Yasuo의 E 이동을 완전히 봉쇄합니다." },
+    { name: "Annie", severity: "강함", reason: "티버스 스턴으로 Yasuo의 Q 토네이도를 모으기 전에 CC를 겁니다. 강력한 팀파이트 궁극기가 Yasuo의 진입을 처벌합니다." },
+    { name: "Pantheon", severity: "강함", reason: "W 실드로 Yasuo의 Q 토네이도를 흡수합니다. 공중 상태를 감지해 Q를 사용하면 Yasuo의 핵심 콤보가 차단됩니다." },
+    { name: "Renekton", severity: "강함", reason: "초반 강한 교환 능력으로 Yasuo가 Q 스택을 쌓기 어렵게 만듭니다. 분노 E로 Yasuo의 Q를 무시하고 돌진합니다." }
+  ]},
+  "Yone": { role: "미드/탑", counters: [
+    { name: "Malphite", severity: "압도적", reason: "아머 때문에 Yone의 물리 데미지가 감소합니다. 궁극기 노크업으로 Yone의 E 귀환 타이밍을 봉쇄합니다." },
+    { name: "Lissandra", severity: "매우 강함", reason: "E 빙결 발톱으로 Yone의 연속 Q를 방해합니다. 자가 동결로 Yone의 버스트를 무효화합니다." },
+    { name: "Renekton", severity: "강함", reason: "초반 강한 교환으로 Yone이 스택을 쌓기 전에 압박합니다. 분노 E로 Yone의 Q를 무시합니다." },
+    { name: "Pantheon", severity: "강함", reason: "W 실드로 Yone의 첫 번째 Q를 흡수합니다. 포킹으로 Yone이 근접하기 어렵게 만듭니다." }
+  ]},
+  "Zed": { role: "미드", counters: [
+    { name: "Lissandra", severity: "압도적", reason: "자가 동결로 Zed의 죽음 그림자 딜을 완전히 무효화합니다. E 빙결 발톱으로 Zed의 이동을 봉쇄합니다." },
+    { name: "Malzahar", severity: "매우 강함", reason: "억압 궁극기로 Zed의 그림자 이동을 봉쇄합니다. 패시브 방어막이 Zed의 첫 버스트를 흡수합니다." },
+    { name: "Kayle", severity: "강함", reason: "인벌러블로 Zed의 죽음 표식 데미지를 완전히 무효화합니다. 원거리 전환 후 Zed를 안전하게 딜합니다." },
+    { name: "Zhonyas 챔피언", severity: "강함", reason: "죽음 표식 활성화 전 황금 정지를 사용하면 Zed의 R 딜을 0으로 만듭니다. Zed의 핵심 패턴을 완전히 무력화합니다." }
+  ]},
+  "Zeri": { role: "원딜", counters: [
+    { name: "Caitlyn", severity: "강함", reason: "긴 사거리로 Zeri가 속도를 쌓기 전에 지속 견제합니다. 함정으로 Zeri의 이동 경로를 차단합니다." },
+    { name: "Miss Fortune", severity: "강함", reason: "궁극기가 이동하는 Zeri를 추적해 광역 피해를 입힙니다. 라인전 포킹이 Zeri보다 일관적으로 강합니다." },
+    { name: "Jinx", severity: "강함", reason: "로켓 사거리로 Zeri가 접근하기 어렵게 만듭니다. 후반 스케일링에서 Zeri와 대등합니다." },
+    { name: "Sivir", severity: "강함", reason: "W 주문 방어막으로 Zeri의 Q 투사체를 흡수합니다. 빠른 라인 클리어로 Zeri의 포지셔닝을 방해합니다." }
+  ]},
+  "Ziggs": { role: "미드/원딜", counters: [
+    { name: "Zed", severity: "매우 강함", reason: "그림자로 Ziggs의 지뢰밭을 무시하고 근접합니다. Ziggs의 낮은 기동성을 이용해 일방적으로 처치합니다." },
+    { name: "Talon", severity: "강함", reason: "벽 점프로 Ziggs에게 빠르게 접근합니다. AD 딜러라 Ziggs의 마저 세팅을 무시합니다." },
+    { name: "LeBlanc", severity: "강함", reason: "다중 이동기로 Ziggs의 느린 스킬을 모두 회피합니다. 짧은 교전에서 Ziggs보다 높은 버스트를 가집니다." },
+    { name: "Fizz", severity: "강함", reason: "W 점프로 Ziggs의 지뢰와 폭탄을 회피합니다. 이동기로 Ziggs가 조준할 시간을 주지 않습니다." }
+  ]},
+  "Zilean": { role: "서포터/미드", counters: [
+    { name: "Blitzcrank", severity: "강함", reason: "Zilean 본인을 훅으로 잡아 처치합니다. Zilean의 폭탄 던지기 전에 이니시를 만들어 처치합니다." },
+    { name: "Leona", severity: "강함", reason: "강한 CC 사슬로 Zilean이 폭탄을 쌓기 전에 CC를 겁니다. 초반 강한 이니시로 Zilean의 아군을 위협합니다." },
+    { name: "Pyke", severity: "강함", reason: "처형 궁극기가 Zilean의 소생 궁극기를 무력화합니다. 처형은 소생 효과가 발동되지 않습니다." },
+    { name: "Thresh", severity: "강함", reason: "훅으로 Zilean을 직접 잡아냅니다. Zilean의 낮은 기동성을 이용해 지속 위협합니다." }
+  ]},
+  "Zoe": { role: "미드", counters: [
+    { name: "Lissandra", severity: "강함", reason: "자가 동결로 Zoe의 수면 공격 후 처치 패턴을 무효화합니다. E 빙결 발톱으로 Zoe의 포탈 점프를 방해합니다." },
+    { name: "Galio", severity: "강함", reason: "높은 마저로 Zoe의 스킬 데미지를 대부분 흡수합니다. W 도발로 Zoe를 잡아 처치합니다." },
+    { name: "Kassadin", severity: "강함", reason: "마력 방어막으로 Zoe의 Q 딜을 흡수합니다. 후반 점멸 점프로 Zoe의 포탈 이동을 추격합니다." },
+    { name: "Morgana", severity: "강함", reason: "W 흑색 방패로 Zoe의 수면 마법을 완전히 차단합니다. Zoe의 핵심 CC가 막히면 안전하게 딜할 수 있습니다." }
+  ]},
+  "Zyra": { role: "서포터/미드", counters: [
+    { name: "Blitzcrank", severity: "강함", reason: "Zyra 본인을 훅으로 잡아 처치합니다. Zyra의 낮은 기동성과 체력을 이용해 직접 제압합니다." },
+    { name: "Leona", severity: "강함", reason: "강한 이니시로 Zyra가 식물을 심기 전에 CC를 겁니다. Zyra의 낮은 체력을 CC 사슬로 즉시 처치합니다." },
+    { name: "LeBlanc", severity: "강함", reason: "이동기로 Zyra의 식물 사거리를 회피합니다. 기동성이 없는 Zyra에게 빠르게 근접해 처치합니다." },
+    { name: "Fizz", severity: "강함", reason: "W 점프로 Zyra의 모든 식물 공격을 회피합니다. Zyra의 낮은 기동성을 이용해 근접에서 처치합니다." }
+  ]}
+};
+
+// 데이터가 없는 챔피언들을 위한 기본 카운터 생성
+function getDefaultCounters(name) {
+  return {
+    role: "라인",
+    counters: [
+      { name: "Malphite", severity: "강함", reason: "높은 아머와 CC로 대부분의 챔피언을 상대로 유리한 교환을 합니다. 궁극기 노크업이 교전을 지배합니다." },
+      { name: "Morgana", severity: "강함", reason: "블랙 실드로 아군 CC를 막고, Q 묶기로 상대를 무력화합니다." },
+      { name: "Jax", severity: "강함", reason: "E 반격으로 AA 의존 챔피언을 카운터합니다. 후반 스케일링이 대부분의 챔피언을 압도합니다." },
+      { name: "Fiora", severity: "강함", reason: "리포스트로 스킬을 무효화하고 지속 딜과 회복으로 장기전을 지배합니다." }
+    ]
+  };
+}
+
+// ========== LOAD CHAMPION ==========
+function loadChampion(name) {
+  // Show splash banner immediately
+  const splashBanner = document.getElementById('splashBanner');
+  document.getElementById('splashImg').src = splashUrl(name);
+  document.getElementById('splashImg').onerror = function(){ this.src = iconUrl(name); this.style.height='140px'; };
+  document.getElementById('splashName').textContent = name;
+  splashBanner.classList.add('show');
+
+  // Update drop zone
+  dropZone.classList.add('has-champ');
+  dropZone.innerHTML = `
+    <img class="drop-champ-img" src="${iconUrl(name)}" onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/Ryze.png'">
+    <div class="drop-champ-name">${name}</div>
+  `;
+  document.getElementById('resetBtn').classList.add('show');
+
+  // Show panel
+  const panel = document.getElementById('resultPanel');
+  panel.classList.add('show');
+  document.getElementById('loadingState').style.display = 'none';
+
+  const data = counterDB[name] || getDefaultCounters(name);
+  data.champion = name;
+  document.getElementById('splashRole').textContent = data.role || '';
+  renderResult(data);
+}
+
+function renderResult(data) {
+  document.getElementById('loadingState').style.display = 'none';
+  // Update splash role
+  document.getElementById('splashRole').textContent = data.role || '';
+
+  const counters = data.counters || [];
+  let html = `
+    <div class="result-header">
+      <img class="result-champ-icon" src="${iconUrl(data.champion)}" onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/Ryze.png'">
+      <div class="result-title">
+        <h2>${data.champion}</h2>
+        <p>${data.role} · 2026 시즌 카운터 픽</p>
+      </div>
+    </div>
+    <div class="counter-list">
+  `;
+
+  counters.forEach(c => {
+    html += `
+      <div class="counter-card">
+        <img class="counter-splash" src="${splashUrl(c.name)}" onerror="this.src='${iconUrl(c.name)}';this.style.objectPosition='center';" alt="${c.name}">
+        <div class="counter-info">
+          <div class="counter-name">${c.name}</div>
+          <span class="counter-badge">${c.severity || '강함'}</span>
+          <div class="counter-reason">${c.reason}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  document.getElementById('resultContent').innerHTML = html;
+}
+
+function resetChamp() {
+  dropZone.classList.remove('has-champ');
+  dropZone.innerHTML = `
+    <span class="drop-icon" id="dropIcon">⬇</span>
+    <span class="drop-label" id="dropLabel">여기에 챔피언을<br>드래그하세요</span>
+  `;
+  document.getElementById('resetBtn').classList.remove('show');
+  document.getElementById('resultPanel').classList.remove('show');
+  document.getElementById('splashBanner').classList.remove('show');
+}
+</script>
+</body>
+</html>
