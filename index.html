@@ -3,151 +3,234 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LoL 카운터 픽 2026</title>
+<title>LoL 실시간 카운터 분석기</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;600&display=swap');
-:root{--gold:#C89B3C;--gold-light:#F0E6C8;--dark:#0A0E17;--blue:#00D4FF;--red:#FF4655;--green:#00C853;}
+:root{
+  --gold:#C89B3C;--gold-light:#F0E6C8;--dark:#060A12;--dark2:#0D1520;
+  --blue:#00D4FF;--red:#FF4655;--green:#00E676;--panel:rgba(10,18,30,0.98);
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--dark);color:var(--gold-light);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,155,60,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,155,60,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-header{text-align:center;padding:22px 20px 12px;position:relative;z-index:2;}
-header h1{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.2rem,4vw,1.9rem);color:var(--gold);letter-spacing:3px;text-shadow:0 0 20px rgba(200,155,60,0.5);}
-header p{font-size:0.73rem;color:rgba(240,230,200,0.45);margin-top:5px;letter-spacing:1px;}
-.divider{width:140px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:8px auto 0;}
-.app{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 14px 40px;position:relative;z-index:1;}
 
-.drop-zone-wrap{width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;gap:8px;}
-.drop-zone{width:126px;height:126px;border-radius:50%;border:2px dashed var(--gold);background:radial-gradient(circle,rgba(200,155,60,0.08) 0%,transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.3s ease;cursor:default;box-shadow:0 0 30px rgba(200,155,60,0.1),inset 0 0 30px rgba(200,155,60,0.05);}
-.drop-zone.over{border-color:var(--blue);background:radial-gradient(circle,rgba(0,212,255,0.15) 0%,transparent 70%);box-shadow:0 0 40px rgba(0,212,255,0.3);transform:scale(1.05);}
-.drop-zone.has-champ{border-style:solid;border-color:var(--gold);}
-.drop-icon{font-size:2rem;opacity:0.4;}
-.drop-label{font-size:0.68rem;color:rgba(200,155,60,0.6);text-align:center;margin-top:5px;letter-spacing:0.5px;line-height:1.4;}
-.drop-champ-img{width:92px;height:92px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);box-shadow:0 0 20px rgba(200,155,60,0.4);}
-.drop-champ-name{font-family:'Black Han Sans',sans-serif;font-size:0.82rem;color:var(--gold);margin-top:4px;letter-spacing:1px;}
-.reset-btn{background:none;border:1px solid rgba(200,155,60,0.25);color:rgba(200,155,60,0.6);font-size:0.68rem;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;display:none;}
-.reset-btn:hover{border-color:var(--gold);color:var(--gold);}
+/* BG */
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 120% 60% at 50% 0%, rgba(200,155,60,0.06) 0%, transparent 60%),
+  linear-gradient(rgba(200,155,60,0.025) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(200,155,60,0.025) 1px,transparent 1px);
+  background-size:auto,50px 50px,50px 50px;pointer-events:none;z-index:0;}
+
+header{text-align:center;padding:26px 20px 14px;position:relative;z-index:2;}
+.header-badge{display:inline-block;font-size:0.6rem;letter-spacing:2px;color:var(--blue);border:1px solid rgba(0,212,255,0.3);border-radius:20px;padding:2px 10px;margin-bottom:8px;}
+header h1{font-family:'Black Han Sans',sans-serif;font-size:clamp(1.3rem,5vw,2.1rem);color:var(--gold);letter-spacing:4px;text-shadow:0 0 30px rgba(200,155,60,0.4);}
+header p{font-size:0.72rem;color:rgba(240,230,200,0.4);margin-top:6px;letter-spacing:1px;}
+.divider{width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:10px auto 0;}
+
+.app{display:flex;flex-direction:column;align-items:center;gap:16px;padding:14px 14px 50px;position:relative;z-index:1;}
+
+/* DROP ZONE */
+.drop-zone-wrap{width:100%;max-width:580px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.drop-zone{
+  width:140px;height:140px;border-radius:50%;
+  border:2px dashed rgba(200,155,60,0.5);
+  background:radial-gradient(circle,rgba(200,155,60,0.06) 0%,transparent 70%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:all 0.3s ease;cursor:default;
+  box-shadow:0 0 40px rgba(200,155,60,0.08),inset 0 0 40px rgba(200,155,60,0.04);
+  position:relative;
+}
+.drop-zone::after{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:1px solid rgba(200,155,60,0.1);
+}
+.drop-zone.over{
+  border-color:var(--blue);
+  background:radial-gradient(circle,rgba(0,212,255,0.12) 0%,transparent 70%);
+  box-shadow:0 0 60px rgba(0,212,255,0.25),inset 0 0 40px rgba(0,212,255,0.08);
+  transform:scale(1.06);
+}
+.drop-zone.has-champ{border-style:solid;border-color:var(--gold);background:radial-gradient(circle,rgba(200,155,60,0.1) 0%,transparent 70%);}
+.drop-icon{font-size:2.2rem;opacity:0.35;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:0.35;}50%{opacity:0.6;}}
+.drop-label{font-size:0.68rem;color:rgba(200,155,60,0.55);text-align:center;margin-top:6px;line-height:1.5;}
+.drop-champ-img{width:100px;height:100px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);box-shadow:0 0 24px rgba(200,155,60,0.4);}
+.drop-champ-name{font-family:'Black Han Sans',sans-serif;font-size:0.9rem;color:var(--gold);margin-top:6px;letter-spacing:1px;}
+.reset-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(200,155,60,0.2);color:rgba(200,155,60,0.55);font-size:0.68rem;padding:5px 14px;border-radius:20px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;display:none;letter-spacing:0.5px;}
+.reset-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(200,155,60,0.06);}
 .reset-btn.show{display:inline-block;}
 
-.splash-banner{width:100%;max-width:560px;border-radius:12px;overflow:hidden;position:relative;display:none;animation:fadeUp 0.5s ease;border:1px solid rgba(200,155,60,0.25);box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+/* SPLASH */
+.splash-banner{width:100%;max-width:580px;border-radius:14px;overflow:hidden;position:relative;display:none;animation:fadeUp 0.5s ease;border:1px solid rgba(200,155,60,0.2);box-shadow:0 12px 40px rgba(0,0,0,0.6);}
 .splash-banner.show{display:block;}
-.splash-banner img{width:100%;height:180px;object-fit:cover;object-position:top center;display:block;filter:brightness(0.85);}
-.splash-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,rgba(10,14,23,0.75) 70%,rgba(10,14,23,0.97) 100%);pointer-events:none;}
-.splash-label{position:absolute;bottom:10px;left:14px;right:14px;display:flex;align-items:flex-end;justify-content:space-between;}
-.splash-label h3{font-family:'Black Han Sans',sans-serif;font-size:1.3rem;color:#fff;letter-spacing:2px;text-shadow:0 2px 8px rgba(0,0,0,0.8);}
-.role-tag{font-size:0.63rem;background:rgba(200,155,60,0.25);border:1px solid rgba(200,155,60,0.5);color:var(--gold);padding:3px 9px;border-radius:20px;letter-spacing:1px;white-space:nowrap;}
+.splash-banner img{width:100%;height:200px;object-fit:cover;object-position:top center;display:block;filter:brightness(0.8);}
+.splash-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(6,10,18,0) 20%,rgba(6,10,18,0.7) 65%,rgba(6,10,18,0.96) 100%);pointer-events:none;}
+.splash-label{position:absolute;bottom:14px;left:18px;right:18px;display:flex;align-items:flex-end;justify-content:space-between;}
+.splash-label h3{font-family:'Black Han Sans',sans-serif;font-size:1.5rem;color:#fff;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,0.9);}
+.role-pill{font-size:0.62rem;background:rgba(200,155,60,0.2);border:1px solid rgba(200,155,60,0.5);color:var(--gold);padding:3px 11px;border-radius:20px;letter-spacing:1.5px;white-space:nowrap;backdrop-filter:blur(4px);}
 
-.result-panel{width:100%;max-width:560px;background:rgba(15,25,35,0.97);border:1px solid rgba(200,155,60,0.2);border-radius:12px;overflow:hidden;display:none;animation:fadeUp 0.4s ease;}
+/* MAIN RESULT */
+.result-panel{width:100%;max-width:580px;background:var(--panel);border:1px solid rgba(200,155,60,0.15);border-radius:14px;overflow:hidden;display:none;animation:fadeUp 0.4s ease;box-shadow:0 8px 40px rgba(0,0,0,0.5);}
 .result-panel.show{display:block;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.result-header{background:linear-gradient(135deg,rgba(200,155,60,0.15),rgba(200,155,60,0.05));border-bottom:1px solid rgba(200,155,60,0.2);padding:11px 14px;display:flex;align-items:center;gap:10px;}
-.result-champ-icon{width:42px;height:42px;border-radius:7px;object-fit:cover;border:1px solid var(--gold);}
-.result-title h2{font-family:'Black Han Sans',sans-serif;font-size:0.95rem;color:var(--gold);letter-spacing:1px;}
-.result-title p{font-size:0.66rem;color:rgba(240,230,200,0.5);margin-top:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
-.tab-bar{display:flex;border-bottom:1px solid rgba(200,155,60,0.2);background:rgba(0,0,0,0.2);}
-.tab-btn{flex:1;background:none;border:none;color:rgba(200,155,60,0.5);font-family:'Noto Sans KR',sans-serif;font-size:0.66rem;padding:9px 2px;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;}
-.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(200,155,60,0.06);}
-.tab-btn:hover:not(.active){color:rgba(200,155,60,0.8);}
-.tab-pane{display:none;padding:12px;}
-.tab-pane.active{display:block;}
+/* RESULT HEADER */
+.result-header{background:linear-gradient(135deg,rgba(200,155,60,0.12),rgba(200,155,60,0.04));border-bottom:1px solid rgba(200,155,60,0.15);padding:14px 18px;display:flex;align-items:center;gap:12px;}
+.result-champ-icon{width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid rgba(200,155,60,0.5);box-shadow:0 0 12px rgba(200,155,60,0.2);}
+.result-title h2{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;color:var(--gold);letter-spacing:1px;}
+.result-title p{font-size:0.68rem;color:rgba(240,230,200,0.45);margin-top:3px;}
+.live-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.55rem;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);color:var(--green);padding:2px 8px;border-radius:10px;margin-left:8px;}
+.live-dot{width:5px;height:5px;background:var(--green);border-radius:50%;animation:blink 1.2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-/* LANE FILTER */
-.lane-filter{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px;}
-.lane-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(200,155,60,0.2);border-radius:20px;padding:4px 11px;font-size:0.65rem;color:rgba(200,155,60,0.6);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;}
-.lane-btn.active{background:rgba(200,155,60,0.15);border-color:var(--gold);color:var(--gold);}
-.lane-btn:hover:not(.active){border-color:rgba(200,155,60,0.4);color:rgba(200,155,60,0.8);}
-.lane-empty{font-size:0.75rem;color:rgba(240,230,200,0.4);text-align:center;padding:20px 0;}
+/* LANE TABS */
+.lane-tabs{display:flex;border-bottom:1px solid rgba(200,155,60,0.12);background:rgba(0,0,0,0.25);overflow-x:auto;scrollbar-width:none;}
+.lane-tabs::-webkit-scrollbar{display:none;}
+.lane-tab{flex:1;min-width:68px;background:none;border:none;color:rgba(200,155,60,0.45);font-family:'Noto Sans KR',sans-serif;font-size:0.65rem;padding:11px 6px 9px;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;white-space:nowrap;}
+.lane-tab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(200,155,60,0.05);}
+.lane-tab:hover:not(.active){color:rgba(200,155,60,0.75);}
+.lane-tab .tab-icon{display:block;font-size:1rem;margin-bottom:2px;}
 
-/* COUNTERS */
-.counter-list{display:flex;flex-direction:column;gap:9px;}
-.counter-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,70,85,0.2);border-left:3px solid var(--red);border-radius:8px;padding:9px 11px;display:flex;gap:9px;align-items:flex-start;transition:background 0.2s;}
-.counter-card:hover{background:rgba(255,70,85,0.06);}
-.counter-splash{width:54px;height:54px;border-radius:7px;object-fit:cover;object-position:top center;border:1px solid rgba(255,70,85,0.4);flex-shrink:0;}
-.counter-info{flex:1;}
-.counter-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.counter-name{font-family:'Black Han Sans',sans-serif;font-size:0.88rem;color:#FF8A94;letter-spacing:0.5px;}
-.lane-tag{font-size:0.56rem;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:#00D4FF;border-radius:10px;padding:1px 6px;}
-.counter-badge{font-size:0.58rem;background:rgba(255,70,85,0.2);color:var(--red);border:1px solid rgba(255,70,85,0.3);border-radius:4px;padding:1px 6px;white-space:nowrap;display:inline-block;margin-top:2px;}
-.counter-reason{font-size:0.71rem;color:rgba(240,230,200,0.65);margin-top:4px;line-height:1.6;}
+/* COUNTER CONTENT */
+.lane-content{padding:16px;}
 
-/* RUNE / ITEM */
-.sec-title{font-size:0.63rem;letter-spacing:1.5px;color:rgba(200,155,60,0.55);text-transform:uppercase;margin-bottom:5px;}
-.chip-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
-.chip{background:rgba(255,255,255,0.05);border:1px solid rgba(100,180,255,0.25);border-radius:20px;padding:3px 9px;font-size:0.67rem;color:rgba(200,220,255,0.85);}
-.chip.gold{border-color:rgba(200,155,60,0.5);color:var(--gold);background:rgba(200,155,60,0.1);}
-.chip.green{border-color:rgba(0,200,83,0.4);color:#69f0ae;background:rgba(0,200,83,0.08);}
-.info-note{font-size:0.69rem;color:rgba(240,230,200,0.5);line-height:1.65;margin-top:4px;}
+/* LOADING */
+.loading-box{display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 20px;}
+.loading-box .spinner{width:36px;height:36px;border:2px solid rgba(200,155,60,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box p{font-size:0.8rem;color:rgba(200,155,60,0.5);letter-spacing:1px;}
+.loading-box .sub{font-size:0.65rem;color:rgba(240,230,200,0.3);}
+
+/* COUNTER CARDS */
+.counter-grid{display:flex;flex-direction:column;gap:10px;}
+.counter-card{
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,70,85,0.15);
+  border-left:3px solid var(--red);
+  border-radius:10px;padding:11px 13px;
+  display:flex;gap:11px;align-items:flex-start;
+  transition:background 0.2s,transform 0.15s;
+  animation:cardIn 0.3s ease both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.counter-card:hover{background:rgba(255,70,85,0.05);transform:translateX(2px);}
+.counter-card:nth-child(1){animation-delay:0.05s}
+.counter-card:nth-child(2){animation-delay:0.1s}
+.counter-card:nth-child(3){animation-delay:0.15s}
+.counter-card:nth-child(4){animation-delay:0.2s}
+.counter-card:nth-child(5){animation-delay:0.25s}
+.cc-img{width:58px;height:58px;border-radius:8px;object-fit:cover;object-position:top center;border:1px solid rgba(255,70,85,0.35);flex-shrink:0;}
+.cc-info{flex:1;min-width:0;}
+.cc-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;}
+.cc-name{font-family:'Black Han Sans',sans-serif;font-size:0.92rem;color:#FF8A94;letter-spacing:0.5px;}
+.cc-wr{font-size:0.62rem;background:rgba(255,70,85,0.15);border:1px solid rgba(255,70,85,0.3);color:#FF8A94;padding:2px 7px;border-radius:10px;}
+.cc-wr.high{background:rgba(255,70,85,0.25);border-color:rgba(255,70,85,0.5);color:var(--red);}
+.cc-reason{font-size:0.72rem;color:rgba(240,230,200,0.62);line-height:1.65;}
+.cc-tip{font-size:0.67rem;color:rgba(0,212,255,0.6);margin-top:4px;font-style:italic;}
+
+.source-note{font-size:0.6rem;color:rgba(240,230,200,0.25);text-align:right;padding:8px 14px 10px;border-top:1px solid rgba(200,155,60,0.08);}
+.source-note a{color:rgba(0,212,255,0.4);text-decoration:none;}
+.source-note a:hover{color:var(--blue);}
+
+.error-box{padding:24px;text-align:center;color:rgba(255,70,85,0.6);font-size:0.8rem;line-height:1.7;}
+.retry-btn{margin-top:10px;background:rgba(255,70,85,0.1);border:1px solid rgba(255,70,85,0.3);color:var(--red);padding:6px 16px;border-radius:8px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:0.72rem;transition:all 0.2s;}
+.retry-btn:hover{background:rgba(255,70,85,0.2);}
 
 /* CHAMPION GRID */
-.champ-section{width:100%;max-width:560px;}
-.section-label{font-size:0.66rem;letter-spacing:2px;color:rgba(200,155,60,0.5);text-transform:uppercase;margin-bottom:8px;padding-left:2px;}
-.search-wrap{position:relative;margin-bottom:9px;}
-.search-wrap input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(200,155,60,0.2);border-radius:8px;padding:8px 12px 8px 32px;color:var(--gold-light);font-size:0.78rem;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color 0.2s;}
-.search-wrap input::placeholder{color:rgba(200,155,60,0.3);}
-.search-wrap input:focus{border-color:var(--gold);}
-.search-wrap .s-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(200,155,60,0.4);font-size:0.82rem;}
-.champ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;max-height:290px;overflow-y:auto;padding:2px;}
+.champ-section{width:100%;max-width:580px;}
+.section-label{font-size:0.65rem;letter-spacing:2px;color:rgba(200,155,60,0.4);text-transform:uppercase;margin-bottom:9px;padding-left:2px;}
+.search-wrap{position:relative;margin-bottom:10px;}
+.search-wrap input{
+  width:100%;background:rgba(255,255,255,0.03);
+  border:1px solid rgba(200,155,60,0.18);border-radius:10px;
+  padding:9px 14px 9px 36px;color:var(--gold-light);
+  font-size:0.78rem;font-family:'Noto Sans KR',sans-serif;outline:none;
+  transition:border-color 0.2s,background 0.2s;
+}
+.search-wrap input:focus{border-color:rgba(200,155,60,0.5);background:rgba(255,255,255,0.05);}
+.search-wrap input::placeholder{color:rgba(200,155,60,0.25);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(200,155,60,0.35);font-size:0.85rem;}
+.champ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:7px;max-height:300px;overflow-y:auto;padding:3px;}
 .champ-grid::-webkit-scrollbar{width:3px;}
-.champ-grid::-webkit-scrollbar-thumb{background:rgba(200,155,60,0.3);border-radius:2px;}
-.champ-tile{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:grab;transition:transform 0.15s;user-select:none;-webkit-user-drag:element;}
+.champ-grid::-webkit-scrollbar-thumb{background:rgba(200,155,60,0.25);border-radius:2px;}
+.champ-tile{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:grab;transition:transform 0.15s,opacity 0.15s;user-select:none;-webkit-user-drag:element;}
 .champ-tile:active{cursor:grabbing;}
-.champ-tile:hover{transform:translateY(-3px);}
-.champ-tile img{width:48px;height:48px;border-radius:7px;object-fit:cover;border:1px solid rgba(200,155,60,0.25);pointer-events:none;transition:border-color 0.2s,box-shadow 0.2s;}
-.champ-tile:hover img{border-color:var(--gold);box-shadow:0 0 10px rgba(200,155,60,0.35);}
-.champ-tile span{font-size:0.53rem;color:rgba(240,230,200,0.55);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
-.dragging{opacity:0.4;transform:scale(0.95);}
+.champ-tile:hover{transform:translateY(-4px);}
+.champ-tile img{width:50px;height:50px;border-radius:8px;object-fit:cover;border:1px solid rgba(200,155,60,0.2);pointer-events:none;transition:all 0.2s;}
+.champ-tile:hover img{border-color:var(--gold);box-shadow:0 0 12px rgba(200,155,60,0.3);}
+.champ-tile span{font-size:0.52rem;color:rgba(240,230,200,0.5);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+.dragging{opacity:0.35;transform:scale(0.92);}
 </style>
 </head>
 <body>
 <header>
-  <h1>⚔ COUNTER PICK ANALYZER</h1>
-  <p>챔피언을 드래그 · 탑/정글/미드/원딜/서포터별 카운터 · 2026 시즌</p>
+  <div class="header-badge">🔴 LIVE DATA · PATCH 26.8</div>
+  <h1>⚔ REAL COUNTER PICK</h1>
+  <p>챔피언 드래그 → u.gg 실제 데이터 실시간 조사</p>
   <div class="divider"></div>
 </header>
+
 <div class="app">
   <div class="drop-zone-wrap">
     <div class="drop-zone" id="dropZone">
       <span class="drop-icon">⬇</span>
-      <span class="drop-label">여기에 챔피언을<br>드래그하세요</span>
+      <span class="drop-label">챔피언을 여기에<br>드래그하세요</span>
     </div>
-    <button class="reset-btn" id="resetBtn" onclick="resetChamp()">↺ 초기화</button>
+    <button class="reset-btn" id="resetBtn" onclick="resetChamp()">↺ 다시 선택</button>
   </div>
+
   <div class="splash-banner" id="splashBanner">
     <img id="splashImg" src="" alt="">
     <div class="splash-overlay"></div>
     <div class="splash-label">
       <h3 id="splashName"></h3>
-      <span class="role-tag" id="splashRole"></span>
+      <span class="role-pill" id="splashRole">로딩 중...</span>
     </div>
   </div>
+
   <div class="result-panel" id="resultPanel">
     <div class="result-header" id="resultHeader" style="display:none">
       <img class="result-champ-icon" id="resultIcon" src="" alt="">
-      <div class="result-title"><h2 id="resultName"></h2><p id="resultSub"></p></div>
+      <div class="result-title">
+        <div style="display:flex;align-items:center">
+          <h2 id="resultName"></h2>
+          <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+        </div>
+        <p id="resultSub">u.gg 실시간 카운터 데이터</p>
+      </div>
     </div>
-    <div class="tab-bar" id="tabBar" style="display:none">
-      <button class="tab-btn active" onclick="switchTab('lane',this)">🗺 라인별 카운터</button>
-      <button class="tab-btn" onclick="switchTab('general',this)">⚔ 전체 카운터</button>
-      <button class="tab-btn" onclick="switchTab('rune',this)">💎 룬</button>
-      <button class="tab-btn" onclick="switchTab('item',this)">🗡 아이템</button>
+
+    <div class="lane-tabs" id="laneTabs" style="display:none">
+      <button class="lane-tab active" onclick="selectLane('top',this)"><span class="tab-icon">🛡</span>탑</button>
+      <button class="lane-tab" onclick="selectLane('jungle',this)"><span class="tab-icon">🌿</span>정글</button>
+      <button class="lane-tab" onclick="selectLane('mid',this)"><span class="tab-icon">⚡</span>미드</button>
+      <button class="lane-tab" onclick="selectLane('adc',this)"><span class="tab-icon">🏹</span>원딜</button>
+      <button class="lane-tab" onclick="selectLane('support',this)"><span class="tab-icon">💫</span>서포터</button>
     </div>
-    <div id="tab-lane" class="tab-pane active"></div>
-    <div id="tab-general" class="tab-pane"></div>
-    <div id="tab-rune" class="tab-pane"></div>
-    <div id="tab-item" class="tab-pane"></div>
+
+    <div class="lane-content" id="laneContent">
+      <div class="loading-box" id="loadingBox" style="display:none">
+        <div class="spinner"></div>
+        <p id="loadingMsg">데이터 조사 중...</p>
+        <div class="sub" id="loadingSub">u.gg에서 실제 카운터 데이터를 가져오는 중입니다</div>
+      </div>
+      <div id="counterContent"></div>
+    </div>
+
+    <div class="source-note">데이터 출처: <a href="https://u.gg" target="_blank">u.gg</a> · Patch 26.8 · Emerald+ 기준</div>
   </div>
+
   <div class="champ-section">
     <div class="section-label">챔피언 목록 — 드래그하여 선택</div>
     <div class="search-wrap">
-      <span class="s-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="한글/영어 검색 (자헨, 유나라, Yasuo...)" oninput="filterChamps()">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="한글/영어 검색 가능 (야스오, 자헨, Yasuo...)" oninput="filterChamps()">
     </div>
     <div class="champ-grid" id="champGrid"></div>
   </div>
 </div>
 
 <script>
-// ===== CHAMPION LIST =====
+// ========== CHAMPION DATA ==========
 const champions = [
   "Aatrox","Ahri","Akali","Akshan","Alistar","Amumu","Anivia","Annie","Aphelios",
   "Ashe","Aurelion Sol","Azir","Bard","Bel'Veth","Blitzcrank","Brand","Braum","Briar",
@@ -159,15 +242,15 @@ const champions = [
   "Kha'Zix","Kindred","Kled","Kog'Maw","LeBlanc","Lee Sin","Leona","Lillia","Lissandra",
   "Lucian","Lulu","Lux","Malphite","Malzahar","Maokai","Master Yi","Mel","Milio",
   "Miss Fortune","Mordekaiser","Morgana","Naafiri","Nami","Nasus","Nautilus","Neeko",
-  "Nidalee","Nilah","Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon","Poppy",
-  "Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc","Renekton",
-  "Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine","Sett","Shaco",
-  "Shen","Shyvana","Singed","Sion","Sivir","Skarner","Smolder","Sona","Soraka","Swain",
-  "Sylas","Syndra","Tahm Kench","Taliyah","Talon","Taric","Teemo","Thresh","Tristana",
-  "Trundle","Tryndamere","Twisted Fate","Twitch","Udyr","Urgot","Varus","Vayne","Veigar",
-  "Vel'Koz","Vex","Vi","Viego","Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah",
-  "Xerath","Xin Zhao","Yasuo","Yone","Yorick","Yunara","Yuumi","Zaahen","Zac","Zed",
-  "Zeri","Ziggs","Zilean","Zoe","Zyra"
+  "Nidalee","Nilah","Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon",
+  "Poppy","Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc",
+  "Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine",
+  "Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner","Smolder","Sona",
+  "Soraka","Swain","Sylas","Syndra","Tahm Kench","Taliyah","Talon","Taric","Teemo",
+  "Thresh","Tristana","Trundle","Tryndamere","Twisted Fate","Twitch","Udyr","Urgot",
+  "Varus","Vayne","Veigar","Vel'Koz","Vex","Vi","Viego","Viktor","Vladimir","Volibear",
+  "Warwick","Wukong","Xayah","Xerath","Xin Zhao","Yasuo","Yone","Yorick","Yunara",
+  "Yuumi","Zaahen","Zac","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"
 ];
 
 const korMap = {
@@ -219,516 +302,317 @@ const idMap = {
   "Vel'Koz":"Velkoz","Xin Zhao":"XinZhao","Wukong":"MonkeyKing"
 };
 function cid(n){return idMap[n]||n.replace(/[^a-zA-Z0-9]/g,'');}
-function icon(n){return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${cid(n)}.png`;}
-function splash(n){return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${cid(n)}_0.jpg`;}
+function iconUrl(n){return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${cid(n)}.png`;}
+function splashUrl(n){return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${cid(n)}_0.jpg`;}
 
-// ===== FULL DATABASE =====
-// laneCounters: { 탑:[{name,sev,reason},...], 정글:[], 미드:[], 원딜:[], 서포터:[] }
-// Only fill lanes that make sense per champion. Others will show "해당 라인 데이터 없음"
-const DB = {
-"Aatrox":{role:"탑",
-lc:{
-  탑:[{n:"Vayne",s:"압도적",r:"트루 데미지로 Aatrox의 높은 HP를 무시합니다. 텀블로 Q를 쉽게 회피합니다."},{n:"Fiora",s:"매우 강함",r:"리포스트로 Q를 막고 역스턴을 넣습니다. 바이탈로 짧은 교전에서도 고딜을 줍니다."},{n:"Gwen",s:"강함",r:"W 무적으로 핵심 스킬을 무효화합니다. 지속 딜이 Aatrox 회복을 앞섭니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹 후 역압박으로 Aatrox의 라인 성장을 방해합니다."},{n:"Graves",s:"강함",r:"정글 싸움에서 폭발 딜로 Aatrox를 빠르게 처치합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Aatrox의 Q 연계를 봉쇄합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"장거리 포킹으로 Aatrox가 접근하기 어렵게 만듭니다."},{n:"Viktor",s:"강함",r:"W 침묵으로 Aatrox의 스킬 연계를 끊습니다."},{n:"Zed",s:"강함",r:"그림자로 Q를 회피하며 근접 폭딜을 넣습니다."}],
-  원딜:[{n:"Vayne",s:"매우 강함",r:"트루 데미지로 Aatrox의 체력을 무시합니다. 텀블로 스킬을 전부 피합니다."},{n:"Caitlyn",s:"강함",r:"긴 사거리로 Aatrox가 접근하기 전에 지속 견제합니다."},{n:"Jinx",s:"강함",r:"원거리에서 로켓 딜로 Aatrox의 Q 범위 밖 교환을 합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 Aatrox의 CC를 방어합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Aatrox의 Q 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Aatrox의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","방어력"],note:"정복자로 Q 콤보 스택 딜 극대화. 돌발 침략으로 트루 데미지 강화."},
-items:{starter:["도란의 방패","체력 포션"],core:["마법 용사의 갑옷","불멸의 방패 보우","죽음의 춤"],sit:["가고일 돌갑옷","가시 갑옷","불사조의 영혼"],boots:"철갑 장화",note:"마법 용사의 갑옷으로 돌진 + 생존. 불멸의 방패 보우로 교전 지속력 극대화."}},
+// u.gg URL slug
+function uggSlug(n){
+  const m={
+    "Aurelion Sol":"aurelion-sol","Bel'Veth":"bel-veth","Cho'Gath":"cho-gath",
+    "Dr. Mundo":"dr-mundo","Jarvan IV":"jarvan-iv","K'Sante":"k-sante",
+    "Kai'Sa":"kai-sa","Kha'Zix":"kha-zix","Kog'Maw":"kog-maw","LeBlanc":"leblanc",
+    "Lee Sin":"lee-sin","Master Yi":"master-yi","Miss Fortune":"miss-fortune",
+    "Nunu & Willump":"nunu-willump","Rek'Sai":"rek-sai","Renata Glasc":"renata-glasc",
+    "Tahm Kench":"tahm-kench","Twisted Fate":"twisted-fate","Vel'Koz":"vel-koz",
+    "Xin Zhao":"xin-zhao","Wukong":"wukong"
+  };
+  return m[n]||n.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-');
+}
 
-"Ahri":{role:"미드",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Ahri의 AP 딜을 흡수합니다. 궁으로 Ahri의 진입을 역이용합니다."},{n:"Garen",s:"강함",r:"침묵으로 Ahri의 스킬 연계를 끊습니다."},{n:"Galio",s:"강함",r:"마저로 Ahri의 딜 대부분을 흡수합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Ahri 라인전을 압박합니다. Q R로 Ahri의 R 이동을 방해합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Ahri의 이동기를 봉쇄합니다."},{n:"Nocturne",s:"강함",r:"시야 차단 궁으로 Ahri의 로밍을 억제합니다."}],
-  미드:[{n:"Syndra",s:"매우 강함",r:"긴 사거리와 E 스턴으로 Ahri의 접근을 원천 차단합니다."},{n:"Lissandra",s:"매우 강함",r:"W로 매혹을 회피하고 자가 동결로 버스트를 무력화합니다."},{n:"Viktor",s:"강함",r:"W 침묵으로 Ahri의 스킬 연계를 끊고 로밍을 억제합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Ahri가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"궁으로 Ahri의 포지셔닝 실수를 처벌합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"압도적",r:"블랙 실드로 매혹을 완전히 무효화합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Ahri의 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Ahri의 이니시를 뒤집습니다."}]},
-runes:{main:"지배",sub:"정밀",mr:["전기충격","어두운 수확","좀비 와드","탐욕스러운 유령"],sr:["신발 끈","전설:능숙함"],sh:["능력치 하나","적응형","성장 체력"],note:"전기충격으로 매혹 후 폭딜. 어두운 수확은 스노우볼 시 선택."},
-items:{starter:["도란의 반지","체력 포션 2개"],core:["루덴의 이야기","그림자 화염","공허의 지팡이"],sit:["라일라이의 수정 홀","존야의 모래시계","죽음의 모자"],boots:"마법사의 신발",note:"루덴 이야기로 포킹과 로밍 강화. 그림자 화염으로 관통력 확보."}},
-
-"Akali":{role:"미드/탑",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Akali의 물리 딜을 흡수하고 궁으로 진입을 봉쇄합니다."},{n:"Garen",s:"강함",r:"침묵으로 Akali의 스킬 연계를 강제로 끊습니다."},{n:"Cho'Gath",s:"강함",r:"마저와 체력으로 Akali의 버스트를 버텨냅니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Akali 라인전을 압박합니다. Q로 은신을 추적합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Akali의 R 진입을 봉쇄합니다."},{n:"Rammus",s:"강함",r:"아머와 도발로 Akali의 AD 버스트를 역이용합니다."}],
-  미드:[{n:"Lissandra",s:"압도적",r:"E가 스모그를 통과하고 자가 동결로 R 버스트를 완전히 무효화합니다."},{n:"Diana",s:"매우 강함",r:"R 고정 CC로 은신 이후 재등장 타이밍을 잡습니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Akali의 모든 움직임을 봉쇄합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Akali의 접근을 미리 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리 포킹으로 Akali가 스모그 전에 체력을 소모시킵니다."},{n:"Ashe",s:"강함",r:"슬로우로 Akali의 접근 속도를 줄입니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Akali의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Akali의 R 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Akali의 이니시를 뒤집습니다."}]},
-runes:{main:"지배",sub:"마법",mr:["전기충격","어두운 수확","좀비 와드","탐욕스러운 유령"],sr:["초월","우주적 통찰"],sh:["능력치 가속","적응형","성장 체력"],note:"전기충격으로 단기 교전 폭딜. 초월로 R 쿨다운 감소."},
-items:{starter:["긴 검","체력 포션"],core:["노야의 검","은둔자의 가발","그림자 화염"],sit:["존야의 모래시계","죽음의 춤","세릴다의 원한"],boots:"요술사의 신발",note:"노야의 검으로 어쌔신 딜. 은둔자 가발로 교전 지속력 확보."}},
-
-"Alistar":{role:"서포터",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Alistar의 탱킹 능력을 무시합니다."},{n:"Fiora",s:"강함",r:"바이탈 공략으로 Alistar의 방어력을 우회합니다."},{n:"Gwen",s:"강함",r:"마법 딜로 Alistar의 아머를 우회합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"Q R 콤보로 Alistar의 CC를 방해합니다."},{n:"Graves",s:"강함",r:"폭발 딜로 Alistar를 정글에서 처치합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Alistar의 이니시를 봉쇄합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"장거리 E 스턴으로 Alistar의 진입을 차단합니다."},{n:"Lissandra",s:"강함",r:"자가 동결로 Alistar의 이니시를 무효화합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Alistar를 완전히 봉쇄합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Alistar의 사거리 밖에서 견제합니다."},{n:"Miss Fortune",s:"강함",r:"궁으로 Alistar의 이니시 후 팀을 처벌합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"압도적",r:"블랙 실드로 Alistar의 모든 CC를 완전히 무효화합니다."},{n:"Thresh",s:"강함",r:"랜턴으로 팀원을 구출해 Alistar의 처형 패턴을 방해합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Alistar의 돌진을 무효화합니다."}]},
-runes:{main:"결의",sub:"영감",mr:["잡아당기기","강철 피부","골렘의 마음","불굴의 의지"],sr:["마법의 신발","우주적 통찰"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 후반 갱 카운터. 결의로 서포터 생존력 극대화."},
-items:{starter:["지원사격의 렐릭","체력 포션"],core:["선블리드 에지","지킴이의 무덤","기사의 서약"],sit:["가고일 돌갑옷","철갑 갑주","수호자의 방패"],boots:"수호자의 발",note:"선블리드로 탱 + 팀 유틸리티. 기사의 서약으로 원딜 보호."}},
-
-"Amumu":{role:"정글",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"궁 노크업으로 Amumu의 Q 도달 전에 봉쇄합니다."},{n:"Garen",s:"강함",r:"침묵으로 Amumu의 스킬을 끊습니다."},{n:"Volibear",s:"강함",r:"강한 1:1로 Amumu를 제압합니다."}],
-  정글:[{n:"Kha'Zix",s:"매우 강함",r:"고립 딜로 Amumu가 혼자 있을 때 처치합니다."},{n:"Nocturne",s:"강함",r:"궁으로 Amumu의 시야를 차단하고 역습합니다."},{n:"Graves",s:"강함",r:"폭발 딜로 Amumu를 정글에서 빠르게 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Amumu의 Q 도달을 차단합니다."},{n:"Zed",s:"강함",r:"그림자로 Amumu의 Q를 피하고 근접 폭딜을 넣습니다."},{n:"LeBlanc",s:"강함",r:"이동기로 Q 밴디지를 쉽게 회피합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Amumu가 접근하기 전에 견제합니다."},{n:"Jinx",s:"강함",r:"CC 없이 Amumu 라인 밖에서 딜합니다."},{n:"Ashe",s:"강함",r:"슬로우로 Amumu의 접근 속도를 줄입니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 Amumu의 CC를 방어합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Amumu의 Q 이동을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Amumu의 이니시를 뒤집습니다."}]},
-runes:{main:"결의",sub:"마법",mr:["잡아당기기","강철 피부","골렘의 마음","불굴의 의지"],sr:["초월","우주적 통찰"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 강력한 이니시 보강. 결의로 탱 정글러 운용."},
-items:{starter:["정글러의 칼날"],core:["선블리드 에지","아비샬 사파이어","죄수의 갈고리"],sit:["솔라리의 부적","가고일 돌갑옷","가시 갑옷"],boots:"수호자의 발",note:"선블리드로 탱 + CC. 아비샬 사파이어로 진입 후 추가 CC."}},
-
-"Ashe":{role:"원딜",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Ashe의 AA 딜을 흡수합니다."},{n:"Garen",s:"강함",r:"침묵으로 Ashe의 스킬을 끊습니다."},{n:"Gnar",s:"강함",r:"원거리로 Ashe의 느린 이동을 역이용합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Ashe 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Ashe의 이동을 봉쇄합니다."},{n:"Nocturne",s:"강함",r:"궁으로 Ashe에게 직접 진입합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"장거리 E 스턴으로 Ashe를 무력화합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Ashe를 봉쇄합니다."},{n:"Zed",s:"강함",r:"기동성으로 Ashe의 슬로우를 회피하고 처치합니다."}],
-  원딜:[{n:"Draven",s:"압도적",r:"초반 강한 딜로 Ashe를 일방적으로 압도합니다. CC로 교환을 피하기 어렵습니다."},{n:"Lucian",s:"매우 강함",r:"이동기로 슬로우를 피하며 짧은 교환에서 앞섭니다."},{n:"Caitlyn",s:"강함",r:"더 긴 사거리로 지속 포킹합니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"훅으로 Ashe를 잡아 처치합니다."},{n:"Leona",s:"강함",r:"이동기 없는 Ashe를 CC 사슬로 잡습니다."},{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 Ashe를 무력화합니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["무적 함대","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","성장 체력"],note:"무적 함대로 약한 기동성 보완. 피의 맛으로 교환 시 이득."},
-items:{starter:["도란의 검","체력 포션"],core:["크라켄의 학살자","구인수의 격노검","무한의 대검"],sit:["빙결 건틀릿","신기한 유리구슬","피의 번개"],boots:"베르세르커 건틀릿",note:"크라켄 + 구인수 조합으로 공격 속도와 딜 극대화."}},
-
-"Blitzcrank":{role:"서포터",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지와 이동기로 Blitzcrank의 탱킹을 무시합니다."},{n:"Darius",s:"강함",r:"E로 잡아당겨 역으로 교환합니다."},{n:"Fiora",s:"강함",r:"리포스트로 스킬을 무효화합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Blitzcrank 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Blitzcrank를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"핏냄새로 추적하고 억압으로 봉쇄합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Blitzcrank의 훅 타이밍을 방해합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 봉쇄합니다."},{n:"Lux",s:"강함",r:"Q 묶기로 Blitzcrank의 훅 전에 먼저 잡습니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Blitzcrank의 훅 사거리 밖에서 견제합니다."},{n:"Ezreal",s:"강함",r:"E 이동기로 훅을 회피합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"압도적",r:"블랙 실드로 Q 훅을 완전히 무효화합니다."},{n:"Thresh",s:"강함",r:"더 다양한 CC와 이니시를 가집니다."},{n:"Lulu",s:"강함",r:"훅 후 폴리모프로 Blitzcrank의 콤보를 방해합니다."}]},
-runes:{main:"결의",sub:"영감",mr:["잡아당기기","부서진 전선","골렘의 마음","불굴의 의지"],sr:["마법의 신발","우주적 통찰"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 훅 후 추가 CC 극대화."},
-items:{starter:["지원사격의 렐릭","체력 포션"],core:["선블리드 에지","아비샬 사파이어","죄수의 갈고리"],sit:["가고일 돌갑옷","솔라리의 부적","지킴이의 무덤"],boots:"수호자의 발",note:"선블리드 + 아비샬로 훅 후 이중 CC. 죄수 갈고리로 추가 슬로우."}},
-
-"Caitlyn":{role:"원딜",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Caitlyn의 딜을 흡수합니다."},{n:"Garen",s:"강함",r:"침묵으로 E 고정을 끊습니다."},{n:"Renekton",s:"강함",r:"갭 클로즈로 Caitlyn의 긴 사거리를 무력화합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Caitlyn 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Caitlyn의 이동을 봉쇄합니다."},{n:"Nocturne",s:"강함",r:"궁으로 Caitlyn에게 직접 진입합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 E 고정을 회피하고 근접 폭딜을 넣습니다."},{n:"Talon",s:"강함",r:"벽 점프로 Caitlyn에게 빠르게 접근합니다."},{n:"Syndra",s:"강함",r:"장거리 E 스턴으로 Caitlyn을 무력화합니다."}],
-  원딜:[{n:"Draven",s:"매우 강함",r:"긴 사거리 이점을 상쇄할 폭발적인 딜을 가집니다."},{n:"Miss Fortune",s:"강함",r:"러브탭으로 짧은 교환에서도 높은 딜을 줍니다."},{n:"Sivir",s:"강함",r:"W로 E 고정 피해를 흡수합니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"훅으로 Caitlyn을 잡아 CC 후 처치합니다."},{n:"Leona",s:"강함",r:"CC 사슬로 Caitlyn을 무력화합니다."},{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 Caitlyn을 처치합니다."}]},
-runes:{main:"정밀",sub:"영감",mr:["침착","피의 맛","전설:강인함","마지막 저항"],sr:["마법의 신발","우주적 통찰"],sh:["공격 속도","적응형","성장 체력"],note:"침착으로 마나와 라인전 지속력. 영감 서브로 신발 절약."},
-items:{starter:["도란의 검","체력 포션"],core:["크라켄의 학살자","구인수의 격노검","무한의 대검"],sit:["빙결 건틀릿","신기한 유리구슬","피의 번개"],boots:"베르세르커 건틀릿",note:"크라켄 + 구인수로 최강 딜 + 공격 속도 조합."}},
-
-"Darius":{role:"탑",
-lc:{
-  탑:[{n:"Vayne",s:"매우 강함",r:"트루 데미지로 HP를 무시합니다. 텀블로 Q 외곽 힐 구간을 밟지 않고 교환합니다."},{n:"Quinn",s:"강함",r:"원거리 포킹과 실명으로 Darius가 Q를 사용하기 어렵습니다."},{n:"Kennen",s:"강함",r:"원거리 공격으로 접근하기 어렵게 만듭니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Darius 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Darius를 봉쇄합니다."},{n:"Kha'Zix",s:"강함",r:"고립 딜로 Darius를 처치합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 E 갈고리를 회피합니다. AD라 마저를 무시합니다."},{n:"Talon",s:"강함",r:"이동기로 Darius의 Q 범위를 피합니다."},{n:"Syndra",s:"강함",r:"E 스턴으로 Darius의 접근을 차단합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Darius가 접근하기 전에 지속 견제합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Miss Fortune",s:"강함",r:"이동기 없는 Darius를 원거리 포킹으로 처벌합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 Darius의 CC를 방어합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Darius의 돌진을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Darius의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"결의",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["뼈 방패","불굴의 의지"],sh:["공격 속도","적응형","방어력"],note:"정복자로 Q+E+R 스택 출혈 콤보 극대화."},
-items:{starter:["도란의 방패","체력 포션"],core:["마법 용사의 갑옷","스테락의 도전","가고일 돌갑옷"],sit:["가시 갑옷","죽음의 춤","필멸자의 운동화"],boots:"요술사의 신발",note:"마법 용사의 갑옷으로 돌진 + 버텨내기. 스테락으로 버스트 생존."}},
-
-"Fizz":{role:"미드",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Fizz의 AD 딜을 흡수합니다. 궁으로 Fizz의 진입을 봉쇄합니다."},{n:"Garen",s:"강함",r:"침묵으로 Fizz의 스킬 연계를 끊습니다."},{n:"Renekton",s:"강함",r:"분노 E로 Fizz의 W 타이밍을 무시합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Fizz 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Fizz의 W 무적을 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Fizz를 잡아 처치합니다."}],
-  미드:[{n:"Malzahar",s:"압도적",r:"억압 궁으로 Fizz를 완전히 봉쇄합니다. 패시브 방어막이 버스트를 흡수합니다."},{n:"Lissandra",s:"매우 강함",r:"자가 동결로 Fizz의 W 버스트를 무효화합니다."},{n:"Galio",s:"강함",r:"높은 마저로 버스트를 흡수합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Fizz가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 Fizz의 W 이전에 포킹합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Fizz의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Fizz의 W 진입을 방해합니다."},{n:"Nami",s:"강함",r:"버블로 Fizz의 진입을 차단합니다."}]},
-runes:{main:"지배",sub:"마법",mr:["전기충격","어두운 수확","좀비 와드","전략적 사냥꾼"],sr:["마나 흐름 밴드","초월"],sh:["능력치 하나","적응형","성장 체력"],note:"전기충격으로 W 폭발 콤보 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["나이트엣지","은둔자의 가발","공허의 지팡이"],sit:["존야의 모래시계","류윤가의 지팡이","죽음의 모자"],boots:"마법사의 신발",note:"나이트엣지로 어쌔신 진입. 은둔자 가발로 교전 후 생존."}},
-
-"Garen":{role:"탑",
-lc:{
-  탑:[{n:"Vayne",s:"압도적",r:"트루 데미지로 높은 HP를 무시합니다. 텀블로 침묵 추격을 쉽게 피합니다."},{n:"Quinn",s:"매우 강함",r:"원거리 공격과 실명으로 Garen이 접근하기 어렵게 만듭니다."},{n:"Kennen",s:"강함",r:"원거리 포킹으로 Garen이 사거리 안에 오기 전에 견제합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Garen 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Garen을 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Garen을 잡아 처치합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 E 침묵을 회피합니다. AD라 Garen의 방어를 무시합니다."},{n:"Talon",s:"강함",r:"이동기로 Garen의 Q 추격을 따돌립니다."},{n:"LeBlanc",s:"강함",r:"이동기로 모든 스킬을 회피합니다."}],
-  원딜:[{n:"Vayne",s:"압도적",r:"트루 데미지로 Garen의 탱킹을 완전히 무시합니다."},{n:"Caitlyn",s:"강함",r:"긴 사거리로 Garen이 접근하기 전에 지속 포킹합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Garen의 침묵으로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Garen의 돌진을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Garen의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"결의",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["뼈 방패","불굴의 의지"],sh:["공격 속도","적응형","방어력"],note:"정복자로 E 회전 스택 딜 극대화."},
-items:{starter:["도란의 방패","체력 포션"],core:["마법 용사의 갑옷","가고일 돌갑옷","스테락의 도전"],sit:["필멸자의 운동화","죽음의 춤","가시 갑옷"],boots:"요술사의 신발",note:"마법 용사의 갑옷 + 가고일로 진입 + 극한 생존."}},
-
-"Irelia":{role:"탑/미드",
-lc:{
-  탑:[{n:"Malphite",s:"압도적",r:"슬로우와 높은 아머로 Q 스택 쌓기를 방해합니다. 궁 노크업으로 진입을 역이용합니다."},{n:"Renekton",s:"매우 강함",r:"Irelia의 스택이 쌓이기 전 초반에 강한 교환으로 압살합니다."},{n:"Jax",s:"강함",r:"E 도약 반격으로 Q 연속 진입을 막습니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Irelia 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Irelia의 블레이드 서지를 봉쇄합니다."},{n:"Rammus",s:"강함",r:"아머와 도발로 Irelia의 Q 딜을 역이용합니다."}],
-  미드:[{n:"Malzahar",s:"압도적",r:"억압 궁으로 Irelia의 모든 이동을 봉쇄합니다."},{n:"Syndra",s:"강함",r:"E 스턴으로 Irelia의 Q 진입 직전을 잡습니다."},{n:"Lissandra",s:"강함",r:"E 빙결로 Irelia의 연속 Q를 방해합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Irelia가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리 포킹으로 Irelia의 Q 사거리 밖에서 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Irelia의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Irelia의 Q 연속 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Irelia의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","방어력"],note:"정복자로 Q 연속 진입 스택 딜 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["삼위일체 검","죽음의 춤","스테락의 도전"],sit:["가고일 돌갑옷","필멸자의 운동화","세릴다의 원한"],boots:"요술사의 신발",note:"삼위일체 검으로 Q AA 교환 딜 극대화."}},
-
-"Jax":{role:"탑/정글",
-lc:{
-  탑:[{n:"Malphite",s:"압도적",r:"아머가 높아 AA 기반 딜이 거의 들어가지 않습니다. 궁 노크업으로 E 반격 타이밍을 무시합니다."},{n:"Fiora",s:"매우 강함",r:"Jax의 E 반격 타이밍에 리포스트를 사용해 역이용합니다."},{n:"Volibear",s:"강함",r:"패시브 번개가 Jax의 높은 AA 빈도를 역이용합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"초반 갱킹 능력이 Jax를 앞섭니다."},{n:"Kha'Zix",s:"강함",r:"Jax가 혼자 있을 때 고립 딜로 처치합니다."},{n:"Graves",s:"강함",r:"폭발 딜로 Jax를 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Jax의 접근을 차단합니다."},{n:"Lissandra",s:"강함",r:"E 빙결로 Jax의 E 반격을 방해합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Jax를 완전히 봉쇄합니다."}],
-  원딜:[{n:"Vayne",s:"매우 강함",r:"트루 데미지로 Jax의 높은 방어력을 무시합니다."},{n:"Caitlyn",s:"강함",r:"긴 사거리로 Jax가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Jax의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Jax의 E 반격 타이밍을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Jax의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","방어력"],note:"정복자로 E 반격 후 스택 딜 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["삼위일체 검","스테락의 도전","가고일 돌갑옷"],sit:["죽음의 춤","필멸자의 운동화","가시 갑옷"],boots:"요술사의 신발",note:"삼위일체 검으로 E 후 AA 교환 딜 극대화."}},
-
-"Jinx":{role:"원딜",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Jinx의 물리 딜을 흡수합니다."},{n:"Garen",s:"강함",r:"침묵으로 Jinx의 스킬을 끊습니다."},{n:"Renekton",s:"강함",r:"갭 클로즈로 Jinx에게 근접합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Jinx 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Jinx의 이동을 봉쇄합니다."},{n:"Nocturne",s:"강함",r:"궁으로 Jinx에게 직접 진입합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 W 덫을 피하고 근접 폭딜을 넣습니다."},{n:"Talon",s:"강함",r:"벽 점프로 Jinx에게 빠르게 접근합니다."},{n:"Katarina",s:"강함",r:"리셋 딜로 Jinx를 빠르게 처치합니다."}],
-  원딜:[{n:"Draven",s:"매우 강함",r:"초반 Jinx가 스택을 쌓기 전에 강한 교환으로 압살합니다."},{n:"Caitlyn",s:"강함",r:"긴 사거리로 Jinx의 사거리 밖에서 지속 포킹합니다."},{n:"Tristana",s:"강함",r:"로켓 점프로 Jinx에게 근접해 폭탄을 붙입니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"훅으로 Jinx를 잡아 처치합니다."},{n:"Leona",s:"강함",r:"CC 사슬로 이동기 없는 Jinx를 무력화합니다."},{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 Jinx를 처치합니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["치명적 속도","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","성장 체력"],note:"치명적 속도로 로켓/미니건 공격 속도 극대화."},
-items:{starter:["도란의 검","체력 포션"],core:["크라켄의 학살자","구인수의 격노검","런넌 허리케인"],sit:["무한의 대검","피의 번개","신기한 유리구슬"],boots:"베르세르커 건틀릿",note:"크라켄 + 구인수 + 런넌으로 극한 공격 속도 딜 폭발."}},
-
-"Kassadin":{role:"미드",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Kassadin의 마저 세팅을 무시합니다."},{n:"Fiora",s:"강함",r:"바이탈 공략으로 방어력을 우회합니다."},{n:"Garen",s:"강함",r:"침묵으로 Kassadin의 스킬을 끊습니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"초반 갱킹으로 Kassadin이 6레벨 전에 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 점멸 점프를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Kassadin의 이동을 봉쇄합니다."}],
-  미드:[{n:"Veigar",s:"매우 강함",r:"E 이벤트 호라이즌으로 점멸 점프 위치를 예측해 가둡니다."},{n:"Fizz",s:"강함",r:"Kassadin의 약한 초반을 이용해 레벨 1-5에 압살합니다."},{n:"Pantheon",s:"강함",r:"초반 강한 개입으로 6레벨 전에 일방적으로 압박합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Kassadin이 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"후반에도 원거리로 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Kassadin의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Kassadin의 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Kassadin의 이니시를 뒤집습니다."}]},
-runes:{main:"마법",sub:"정밀",mr:["위상 질주","마나 흐름 밴드","초월","폭풍 모으기"],sr:["침착","전설:능숙함"],sh:["능력치 하나","적응형","성장 체력"],note:"위상 질주로 약한 초반 생존력 확보. 침착으로 마나 유지."},
-items:{starter:["도란의 방패","체력 포션"],core:["로드 반 다물","공허의 지팡이","라일라이의 수정 홀"],sit:["존야의 모래시계","죽음의 모자","류윤가의 지팡이"],boots:"마법사의 신발",note:"로드 반 다물로 R 이동 중 피해 흡수. 공허의 지팡이로 마저 관통."}},
-
-"Katarina":{role:"미드",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머와 궁 노크업으로 Katarina의 R을 끊습니다."},{n:"Garen",s:"강함",r:"침묵으로 R 채널을 즉시 중단시킵니다."},{n:"Cho'Gath",s:"강함",r:"마저와 체력으로 Katarina의 버스트를 버텨냅니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Katarina 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Katarina의 R 채널을 봉쇄합니다."},{n:"Rammus",s:"강함",r:"아머와 도발로 Katarina의 AD 딜을 역이용합니다."}],
-  미드:[{n:"Lissandra",s:"압도적",r:"E로 단검 CC를 걸고 자가 동결로 R 채널을 중단시킵니다."},{n:"Malzahar",s:"매우 강함",r:"억압 궁으로 Katarina의 R 채널을 즉시 중단시킵니다."},{n:"Vex",s:"강함",r:"공포 패시브가 이동기 사용마다 발동됩니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Katarina가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Ashe",s:"강함",r:"슬로우로 Katarina의 접근 속도를 줄입니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Katarina의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Katarina의 R 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Katarina의 이니시를 뒤집습니다."}]},
-runes:{main:"지배",sub:"마법",mr:["어두운 수확","좀비 와드","탐욕스러운 유령","전략적 사냥꾼"],sr:["초월","우주적 통찰"],sh:["능력치 하나","적응형","성장 체력"],note:"어두운 수확으로 처치마다 딜 극대화. 초월로 R 쿨다운 감소."},
-items:{starter:["긴 검","체력 포션"],core:["나이트엣지","은둔자의 가발","공허의 지팡이"],sit:["존야의 모래시계","죽음의 모자","그림자 화염"],boots:"마법사의 신발",note:"나이트엣지로 어쌔신 이동 + 딜. 은둔자 가발로 교전 지속력 확보."}},
-
-"LeBlanc":{role:"미드",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머와 마저로 LeBlanc의 버스트를 흡수합니다."},{n:"Garen",s:"강함",r:"침묵으로 스킬 연계를 끊습니다."},{n:"Galio",s:"강함",r:"높은 마저로 버스트 대부분을 흡수합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 LeBlanc 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 이동기를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 LeBlanc을 잡아 처치합니다."}],
-  미드:[{n:"Malzahar",s:"압도적",r:"억압 궁으로 LeBlanc의 모든 이동을 봉쇄합니다."},{n:"Kassadin",s:"강함",r:"마력 방어막으로 W 딜을 흡수합니다."},{n:"Galio",s:"강함",r:"높은 마저와 체력으로 버스트를 버텨냅니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 LeBlanc가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 LeBlanc의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 LeBlanc의 진입을 방해합니다."},{n:"Nami",s:"강함",r:"버블로 LeBlanc의 진입을 차단합니다."}]},
-runes:{main:"지배",sub:"마법",mr:["전기충격","어두운 수확","좀비 와드","전략적 사냥꾼"],sr:["마나 흐름 밴드","초월"],sh:["능력치 하나","적응형","성장 체력"],note:"전기충격으로 W 진입 후 즉시 폭딜."},
-items:{starter:["긴 검","체력 포션"],core:["나이트엣지","은둔자의 가발","공허의 지팡이"],sit:["존야의 모래시계","그림자 화염","류윤가의 지팡이"],boots:"마법사의 신발",note:"나이트엣지로 어쌔신 진입. 은둔자 가발로 교전 지속력 확보."}},
-
-"Lee Sin":{role:"정글",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Lee Sin의 방어력을 무시합니다."},{n:"Fiora",s:"강함",r:"리포스트로 Q를 무효화하고 지속 딜로 압도합니다."},{n:"Darius",s:"강함",r:"갈고리로 잡아 일방적인 교환을 강요합니다."}],
-  정글:[{n:"Graves",s:"강함",r:"단거리 폭발 딜이 Lee Sin을 압도합니다."},{n:"Kha'Zix",s:"강함",r:"혼자 있을 때 진화 Q로 순삭합니다."},{n:"Elise",s:"강함",r:"CC와 처치 능력이 Lee Sin과 대등합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Lee Sin의 Q 진입을 차단합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 봉쇄합니다."},{n:"Lissandra",s:"강함",r:"CC 사슬로 Lee Sin의 연계를 방해합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Lee Sin이 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Lee Sin의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Lee Sin의 R 진입을 방해합니다."},{n:"Thresh",s:"강함",r:"랜턴으로 팀원을 R 발차기로부터 구출합니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","성장 체력"],note:"정복자로 지속 교전 스택 딜 극대화."},
-items:{starter:["정글러의 칼날"],core:["에클립스","세릴다의 원한","죽음의 춤"],sit:["가고일 돌갑옷","스테락의 도전","필멸자의 운동화"],boots:"요술사의 신발",note:"에클립스로 어쌔신 딜 + 방어막. 세릴다로 E W 추격 슬로우."}},
-
-"Leona":{role:"서포터",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Leona의 탱킹을 무시합니다."},{n:"Fiora",s:"강함",r:"바이탈 공략으로 방어력을 우회합니다."},{n:"Gwen",s:"강함",r:"W 무적으로 스킬을 무효화합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Leona 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Leona의 이니시를 봉쇄합니다."},{n:"Graves",s:"강함",r:"폭발 딜로 Leona를 빠르게 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Leona의 진입을 차단합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Leona를 봉쇄합니다."},{n:"Lux",s:"강함",r:"Q 묶기로 Leona의 진입을 차단합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Leona의 이니시 범위 밖에서 견제합니다."},{n:"Ezreal",s:"강함",r:"E 이동기로 Leona의 CC를 회피합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"압도적",r:"블랙 실드로 Leona의 모든 CC를 완전히 무효화합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Leona의 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Leona의 이니시를 뒤집습니다."}]},
-runes:{main:"결의",sub:"영감",mr:["잡아당기기","부서진 전선","골렘의 마음","불굴의 의지"],sr:["마법의 신발","우주적 통찰"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 E W Q 콤보 이니시 강화."},
-items:{starter:["지원사격의 렐릭","체력 포션"],core:["선블리드 에지","아비샬 사파이어","죄수의 갈고리"],sit:["가고일 돌갑옷","솔라리의 부적","지킴이의 무덤"],boots:"수호자의 발",note:"선블리드 + 아비샬 + 죄수 갈고리로 이중 삼중 CC."}},
-
-"Malphite":{role:"탑",
-lc:{
-  탑:[{n:"Vayne",s:"압도적",r:"트루 데미지로 Malphite의 높은 아머를 완전히 무시합니다."},{n:"Gwen",s:"매우 강함",r:"W 무적으로 스킬과 AA를 무효화합니다."},{n:"Kennen",s:"강함",r:"원거리 포킹으로 접근하기 어렵게 만듭니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Malphite 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Malphite의 궁 사용을 방해합니다."},{n:"Graves",s:"강함",r:"폭발 딜로 Malphite를 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"장거리 포킹으로 Malphite를 지속 견제합니다."},{n:"Zed",s:"강함",r:"그림자로 궁을 회피합니다. AD라 아머를 무시합니다."},{n:"Sylas",s:"강함",r:"Malphite의 강력한 궁을 훔쳐서 역이용합니다."}],
-  원딜:[{n:"Vayne",s:"압도적",r:"트루 데미지로 Malphite의 탱킹을 완전히 무시합니다."},{n:"Caitlyn",s:"강함",r:"긴 사거리로 Malphite가 접근하기 전에 지속 포킹합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Malphite의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Malphite의 돌진을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Malphite의 이니시를 뒤집습니다."}]},
-runes:{main:"결의",sub:"마법",mr:["잡아당기기","부서진 전선","골렘의 마음","불굴의 의지"],sr:["마나 흐름 밴드","초월"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 궁 이니시 강화. 결의로 탱 Malphite 극한 생존."},
-items:{starter:["도란의 방패","체력 포션"],core:["선블리드 에지","아비샬 사파이어","죄수의 갈고리"],sit:["가고일 돌갑옷","솔라리의 부적","율법의 반지"],boots:"수호자의 발",note:"선블리드 + 아비샬 + 죄수 갈고리로 궁 후 삼중 CC."}},
-
-"Miss Fortune":{role:"원딜",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 MF의 물리 딜을 흡수합니다."},{n:"Garen",s:"강함",r:"침묵으로 불릿타임 채널을 즉시 중단시킵니다."},{n:"Renekton",s:"강함",r:"갭 클로즈로 MF에게 근접합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 MF 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 MF의 이동을 봉쇄합니다."},{n:"Nocturne",s:"강함",r:"궁으로 MF에게 직접 진입합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 MF의 Q를 피하고 근접 폭딜을 넣습니다."},{n:"Talon",s:"강함",r:"벽 점프로 MF에게 빠르게 접근합니다."},{n:"Katarina",s:"강함",r:"리셋 딜로 MF를 빠르게 처치합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 MF의 불릿타임 채널 중 도망가기 어렵게 만듭니다."},{n:"Draven",s:"강함",r:"초반 교환 딜이 MF보다 높습니다."},{n:"Sivir",s:"강함",r:"W 방어막으로 MF의 Q 데미지를 흡수합니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"훅으로 MF를 잡아 CC 후 처치합니다."},{n:"Leona",s:"강함",r:"CC 사슬로 MF를 무력화합니다."},{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 MF를 처치합니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["치명적 속도","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","성장 체력"],note:"치명적 속도로 MF의 패시브 러브탭 활성화를 극대화."},
-items:{starter:["도란의 검","체력 포션"],core:["크라켄의 학살자","세릴다의 원한","모르탈 리마인더"],sit:["무한의 대검","구인수의 격노검","라피두스 미사일"],boots:"베르세르커 건틀릿",note:"크라켄 + 세릴다로 불릿타임 중 슬로우 + 탱커 관통."}},
-
-"Morgana":{role:"서포터/미드",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Morgana의 방어력을 무시합니다."},{n:"Darius",s:"강함",r:"갈고리로 Morgana를 잡아 Q 묶기 전에 CC를 넣습니다."},{n:"Garen",s:"강함",r:"침묵으로 Morgana의 스킬을 끊습니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Morgana 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Morgana를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Morgana를 잡아 처치합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 Q 묶기를 회피합니다."},{n:"Fizz",s:"강함",r:"W 점프로 Q 묶기를 회피합니다."},{n:"Talon",s:"강함",r:"벽 점프로 Morgana에게 빠르게 접근합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Q 사거리 밖에서 견제합니다."},{n:"Ezreal",s:"강함",r:"E 이동기로 Q 묶기를 회피합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"Morgana 본인을 훅으로 잡아 처치합니다."},{n:"Nautilus",s:"강함",r:"다중 CC로 Morgana가 블랙 실드를 쓸 여유를 주지 않습니다."},{n:"Leona",s:"강함",r:"강한 이니시로 Morgana를 직접 잡아냅니다."}]},
-runes:{main:"지배",sub:"마법",mr:["어두운 수확","좀비 와드","탐욕스러운 유령","전략적 사냥꾼"],sr:["마나 흐름 밴드","초월"],sh:["능력치 하나","적응형","성장 체력"],note:"어두운 수확으로 서포터 딜 강화."},
-items:{starter:["지원사격의 렐릭","체력 포션"],core:["루덴의 이야기","공허의 지팡이","그림자 화염"],sit:["모렐로노미콘","존야의 모래시계","류윤가의 지팡이"],boots:"마법사의 신발",note:"루덴으로 Q 묶기 후 폭발 딜. 공허의 지팡이로 마저 관통."}},
-
-"Nautilus":{role:"서포터",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Nautilus의 탱킹을 무시합니다."},{n:"Fiora",s:"강함",r:"바이탈 공략으로 방어력을 우회합니다."},{n:"Gwen",s:"강함",r:"W 무적으로 스킬을 무효화합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Nautilus 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Nautilus의 이니시를 봉쇄합니다."},{n:"Graves",s:"강함",r:"폭발 딜로 Nautilus를 빠르게 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Nautilus의 훅을 차단합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 봉쇄합니다."},{n:"Lux",s:"강함",r:"Q 묶기로 Nautilus의 훅을 차단합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Nautilus의 훅 사거리 밖에서 견제합니다."},{n:"Ezreal",s:"강함",r:"E 이동기로 훅을 회피합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"압도적",r:"블랙 실드로 Nautilus의 훅과 패시브 앵커 CC를 완전히 무효화합니다."},{n:"Janna",s:"강함",r:"궁으로 Nautilus의 이니시를 뒤집습니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Nautilus의 훅 후속 이니시를 방해합니다."}]},
-runes:{main:"결의",sub:"영감",mr:["잡아당기기","강철 피부","골렘의 마음","불굴의 의지"],sr:["마법의 신발","우주적 통찰"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 훅 후 추가 CC 극대화."},
-items:{starter:["지원사격의 렐릭","체력 포션"],core:["선블리드 에지","아비샬 사파이어","죄수의 갈고리"],sit:["가고일 돌갑옷","솔라리의 부적","지킴이의 무덤"],boots:"수호자의 발",note:"선블리드 + 아비샬 + 죄수 갈고리로 훅 후 삼중 CC."}},
-
-"Thresh":{role:"서포터",
-lc:{
-  탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 Thresh의 높은 방어력을 무시합니다."},{n:"Fiora",s:"강함",r:"바이탈 공략으로 방어력을 우회합니다."},{n:"Darius",s:"강함",r:"갈고리로 Thresh를 잡아 역교환합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Thresh 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Thresh의 이니시를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Thresh를 잡아 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Thresh의 훅을 차단합니다."},{n:"Lux",s:"강함",r:"Q 묶기로 Thresh의 훅을 차단합니다."},{n:"Zed",s:"강함",r:"그림자로 Thresh의 훅을 회피합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Thresh의 훅 사거리 밖에서 견제합니다."},{n:"Ezreal",s:"강함",r:"E 이동기로 훅을 회피합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"압도적",r:"블랙 실드로 Thresh의 훅과 모든 CC를 완전히 차단합니다."},{n:"Blitzcrank",s:"강함",r:"Thresh보다 더 빠른 훅으로 이니시를 먼저 가져갑니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Thresh의 훅 후 진입을 방해합니다."}]},
-runes:{main:"결의",sub:"영감",mr:["잡아당기기","강철 피부","골렘의 마음","불굴의 의지"],sr:["마법의 신발","우주적 통찰"],sh:["능력치 하나","성장 체력","성장 체력"],note:"잡아당기기로 훅 CC 강화. 결의로 서포터 생존 극대화."},
-items:{starter:["지원사격의 렐릭","체력 포션"],core:["선블리드 에지","아비샬 사파이어","솔라리의 부적"],sit:["지킴이의 무덤","철갑 갑주","가고일 돌갑옷"],boots:"수호자의 발",note:"선블리드로 탱 이니시. 아비샬로 추가 CC. 솔라리로 팀 쉴드."}},
-
-"Vayne":{role:"원딜/탑",
-lc:{
-  탑:[{n:"Darius",s:"강함",r:"갈고리로 Vayne를 잡아 일방적인 교환을 강요합니다. 출혈로 지속 피해를 입힙니다."},{n:"Garen",s:"강함",r:"침묵으로 텀블을 끊고 Q로 접근합니다."},{n:"Renekton",s:"강함",r:"빠른 E+W 콤보로 Vayne가 텀블 전에 CC를 넣습니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Vayne 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Vayne의 텀블을 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Vayne를 잡아 처치합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Vayne의 접근을 차단합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Vayne를 봉쇄합니다."},{n:"Lux",s:"강함",r:"Q 묶기로 Vayne의 텀블을 예측해 잡습니다."}],
-  원딜:[{n:"Caitlyn",s:"매우 강함",r:"긴 사거리로 Vayne가 근접하기 전에 지속 포킹합니다. 함정으로 도주 경로를 차단합니다."},{n:"Draven",s:"강함",r:"초반 강한 딜로 Vayne가 트루 데미지를 활성화하기 전에 압박합니다."},{n:"Miss Fortune",s:"강함",r:"라인전 포킹이 Vayne보다 강해 성장을 방해합니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"훅으로 Vayne를 잡아 처치합니다."},{n:"Leona",s:"강함",r:"이동기 없는 Vayne를 CC 사슬로 잡습니다."},{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 Vayne를 무력화합니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["무적 함대","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","성장 체력"],note:"무적 함대로 약한 기동성 보완."},
-items:{starter:["도란의 검","체력 포션"],core:["크라켄의 학살자","구인수의 격노검","무한의 대검"],sit:["빙결 건틀릿","신기한 유리구슬","피의 번개"],boots:"베르세르커 건틀릿",note:"크라켄 + 구인수로 최강 원딜 딜 + 공격 속도 조합."}},
-
-"Yasuo":{role:"미드/탑",
-lc:{
-  탑:[{n:"Malphite",s:"압도적",r:"아머가 높아 AD 딜이 거의 들어가지 않습니다. 궁 노크업이 E 이동을 완전히 봉쇄합니다."},{n:"Renekton",s:"강함",r:"초반 강한 교환으로 Q 토네이도를 쌓기 어렵게 만듭니다."},{n:"Pantheon",s:"강함",r:"W 실드로 Q 토네이도를 흡수합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Yasuo 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Yasuo의 이동기를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Yasuo를 잡아 처치합니다."}],
-  미드:[{n:"Malphite",s:"압도적",r:"아머와 궁 노크업으로 Yasuo를 완전히 봉쇄합니다."},{n:"Renekton",s:"강함",r:"초반 강한 교환으로 Yasuo의 Q 스택 쌓기를 방해합니다."},{n:"Annie",s:"강함",r:"티버스 스턴으로 Q 토네이도 모으기 전에 CC를 겁니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Yasuo의 W 바람 벽 밖에서 딜합니다."},{n:"Miss Fortune",s:"강함",r:"궁으로 Yasuo의 포지셔닝 실수를 처벌합니다."},{n:"Sivir",s:"강함",r:"W 방어막으로 Q 토네이도를 흡수합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Yasuo의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Yasuo의 E 이동을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Yasuo의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"결의",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["뼈 방패","불굴의 의지"],sh:["공격 속도","적응형","방어력"],note:"정복자로 Q 3타 스택 딜 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["무한의 대검","IMmortal Shieldbow","크라켄의 학살자"],sit:["죽음의 춤","스테락의 도전","세릴다의 원한"],boots:"베르세르커 건틀릿",note:"무한의 대검으로 크리 + AA 딜 극대화."}},
-
-"Yone":{role:"미드/탑",
-lc:{
-  탑:[{n:"Malphite",s:"압도적",r:"아머 때문에 물리 데미지가 감소합니다. 궁 노크업으로 E 귀환 타이밍을 봉쇄합니다."},{n:"Renekton",s:"강함",r:"초반 강한 교환으로 스택을 쌓기 전에 압박합니다."},{n:"Pantheon",s:"강함",r:"W 실드로 Yone의 첫 번째 Q를 흡수합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Yone 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Yone의 E 이동을 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Yone를 잡아 처치합니다."}],
-  미드:[{n:"Malphite",s:"압도적",r:"아머와 궁 노크업으로 Yone를 완전히 봉쇄합니다."},{n:"Lissandra",s:"매우 강함",r:"E 빙결로 연속 Q를 방해합니다. 자가 동결로 버스트를 무효화합니다."},{n:"Renekton",s:"강함",r:"초반 강한 교환으로 Yone가 스택을 쌓기 전에 압박합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Yone가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Yone의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Yone의 Q 연속 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Yone의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","방어력"],note:"정복자로 Q 스택 교전 딜 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["무한의 대검","크라켄의 학살자","스테락의 도전"],sit:["죽음의 춤","가고일 돌갑옷","세릴다의 원한"],boots:"베르세르커 건틀릿",note:"무한의 대검으로 크리 딜 극대화."}},
-
-"Zed":{role:"미드",
-lc:{
-  탑:[{n:"Malphite",s:"강함",r:"아머로 Zed의 AD 딜을 흡수합니다. 궁으로 Zed의 이동을 봉쇄합니다."},{n:"Garen",s:"강함",r:"침묵으로 Zed의 스킬 연계를 끊습니다."},{n:"Renekton",s:"강함",r:"분노 E로 Zed의 그림자 교환을 무시합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Zed 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Zed의 그림자 이동을 봉쇄합니다."},{n:"Rammus",s:"강함",r:"아머와 도발로 Zed의 AD 버스트를 역이용합니다."}],
-  미드:[{n:"Lissandra",s:"압도적",r:"자가 동결로 죽음 그림자 딜을 완전히 무효화합니다."},{n:"Malzahar",s:"매우 강함",r:"억압 궁으로 그림자 이동을 봉쇄합니다."},{n:"Kayle",s:"강함",r:"인벌러블로 죽음 표식 데미지를 완전히 무효화합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Zed가 접근하기 전에 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Zed의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Zed의 R 진입을 방해합니다."},{n:"Zhonya 챔피언",s:"강함",r:"황금 정지로 죽음 표식 딜을 완전히 무효화합니다."}]},
-runes:{main:"지배",sub:"정밀",mr:["어두운 수확","좀비 와드","탐욕스러운 유령","전략적 사냥꾼"],sr:["침착","전설:능숙함"],sh:["공격 속도","적응형","성장 체력"],note:"어두운 수확으로 처치 딜 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["에클립스","세릴다의 원한","가고일 돌갑옷"],sit:["죽음의 춤","스테락의 도전","필멸자의 운동화"],boots:"요술사의 신발",note:"에클립스로 어쌔신 딜 + 방어막."}},
-
-"Zaahen":{role:"탑/정글",
-lc:{
-  탑:[{n:"Vayne",s:"압도적",r:"트루 데미지로 Determination 스택을 쌓아도 HP가 무의미합니다. 텀블로 E와 W를 회피합니다."},{n:"Quinn",s:"매우 강함",r:"원거리 실명과 포킹으로 스택 쌓기를 방해합니다. Zaahen의 근접 강점을 완전히 무력화합니다."},{n:"Gnar",s:"강함",r:"원거리로 짧은 교환만 하며 Determination이 쌓이지 않게 합니다."}],
-  정글:[{n:"Kha'Zix",s:"강함",r:"Zaahen이 혼자 있을 때 진화 Q로 처치합니다. 스택 쌓기 전에 고립 처치합니다."},{n:"Lee Sin",s:"강함",r:"초반 갱킹으로 Zaahen의 정글 성장을 방해합니다."},{n:"Rammus",s:"강함",r:"아머와 도발로 Zaahen의 AA 기반 스택 딜을 역이용합니다."}],
-  미드:[{n:"Syndra",s:"강함",r:"E 스턴으로 Zaahen의 접근을 차단합니다."},{n:"Lissandra",s:"강함",r:"자가 동결로 부활 직후 Zaahen을 처리합니다."},{n:"Malzahar",s:"강함",r:"억압 궁으로 Zaahen의 모든 이동을 봉쇄합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Zaahen이 접근하기 전에 지속 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 아군을 Zaahen의 CC로부터 보호합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 Zaahen의 E 갭 클로즈를 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 Zaahen의 이니시를 뒤집습니다."}]},
-runes:{main:"정밀",sub:"결의",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["뼈 방패","불굴의 의지"],sh:["공격 속도","적응형","방어력"],note:"정복자로 Determination 스택과 시너지. 결의로 부활 후 생존력 극대화."},
-items:{starter:["긴 검","체력 포션"],core:["마법 용사의 갑옷","스테락의 도전","가고일 돌갑옷"],sit:["죽음의 춤","세릴다의 원한","필멸자의 운동화"],boots:"요술사의 신발",note:"마법 용사의 갑옷으로 돌진 + 버팅기기. 스테락으로 부활 발동 직전 버스트 생존."}},
-
-"Yunara":{role:"원딜",
-lc:{
-  탑:[{n:"Darius",s:"강함",r:"갈고리로 Yunara를 잡아 Unleash 전에 CC를 넣습니다."},{n:"Renekton",s:"강함",r:"갭 클로즈로 Yunara에게 근접합니다."},{n:"Malphite",s:"강함",r:"아머로 Yunara의 물리 딜을 흡수합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Yunara 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Yunara의 Unleash를 봉쇄합니다."},{n:"Nocturne",s:"강함",r:"궁으로 Yunara에게 직접 진입합니다."}],
-  미드:[{n:"Zed",s:"강함",r:"그림자로 Yunara의 W 슬로우를 피하고 근접 폭딜을 넣습니다."},{n:"Talon",s:"강함",r:"벽 점프로 Yunara에게 빠르게 접근합니다."},{n:"Katarina",s:"강함",r:"리셋 딜로 Yunara를 빠르게 처치합니다."}],
-  원딜:[{n:"Draven",s:"매우 강함",r:"초반 Yunara가 Unleash 스택을 쌓기 전에 강한 교환 딜로 압도합니다."},{n:"Caitlyn",s:"강함",r:"긴 사거리로 Unleash를 활성화하기 전에 지속 견제합니다."},{n:"Jhin",s:"강함",r:"4탄 크리티컬로 Yunara의 포지셔닝 실수를 처벌합니다."}],
-  서포터:[{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 Yunara의 Unleash 활성화를 방해합니다."},{n:"Leona",s:"강함",r:"강한 이니시 CC로 스택을 쌓을 여유를 주지 않습니다."},{n:"Blitzcrank",s:"강함",r:"훅으로 Yunara를 잡아 CC 후 처치합니다."}]},
-runes:{main:"정밀",sub:"지배",mr:["치명적 속도","피의 맛","전설:강인함","마지막 저항"],sr:["돌발 침략","비열한 한 방"],sh:["공격 속도","적응형","성장 체력"],note:"치명적 속도로 Unleash 활성화 시 공격 속도 극대화."},
-items:{starter:["도란의 검","체력 포션"],core:["크라켄의 학살자","구인수의 격노검","런넌 허리케인"],sit:["공허의 지팡이","무한의 대검","피의 번개"],boots:"베르세르커 건틀릿",note:"크라켄 + 구인수 + 런넌으로 Unleash 발동 시 폭발적인 딜 극대화."}},
-
-"Mel":{role:"미드/서포터",
-lc:{
-  탑:[{n:"Darius",s:"강함",r:"갈고리로 Mel을 잡아 W 반사 전에 CC를 넣습니다."},{n:"Garen",s:"강함",r:"침묵으로 Mel의 스킬을 끊습니다."},{n:"Malphite",s:"강함",r:"아머와 마저로 Mel의 딜을 흡수합니다."}],
-  정글:[{n:"Lee Sin",s:"강함",r:"갱킹으로 Mel 라인전을 압박합니다."},{n:"Vi",s:"강함",r:"R 억압으로 Mel의 W를 봉쇄합니다."},{n:"Warwick",s:"강함",r:"억압으로 Mel을 잡아 처치합니다."}],
-  미드:[{n:"Zed",s:"매우 강함",r:"그림자로 Mel의 W 반사를 회피합니다. 반사될 수 없는 그림자 디버프로 핵심 능력을 무력화합니다."},{n:"Fizz",s:"강함",r:"W 무적으로 Mel의 모든 스킬을 회피합니다. 반사 딜도 흡수합니다."},{n:"Talon",s:"강함",r:"벽 점프로 Mel에게 빠르게 접근합니다. AD라 마저를 무시합니다."}],
-  원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 Mel의 루트 사거리 밖에서 견제합니다."},{n:"Ezreal",s:"강함",r:"E 이동기로 Mel의 루트를 회피합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-  서포터:[{n:"Blitzcrank",s:"강함",r:"훅으로 Mel을 잡아 CC 후 처치합니다. W 반사 전에 연속 CC를 넣습니다."},{n:"Leona",s:"강함",r:"CC 사슬로 Mel이 W를 쓸 여유를 주지 않습니다."},{n:"Nautilus",s:"강함",r:"훅과 다중 CC로 Mel의 유틸리티를 발동시킬 여유를 주지 않습니다."}]},
-runes:{main:"마법",sub:"영감",mr:["아케인 혜성","마나 흐름 밴드","초월","폭풍 모으기"],sr:["마법의 신발","우주적 통찰"],sh:["능력치 하나","적응형","성장 체력"],note:"아케인 혜성으로 루트 스킬 적중 시 포킹 강화. 폭풍 모으기로 후반 딜 폭발."},
-items:{starter:["도란의 반지","체력 포션 2개"],core:["루덴의 이야기","공허의 지팡이","그림자 화염"],sit:["존야의 모래시계","류윤가의 지팡이","죽음의 모자"],boots:"마법사의 신발",note:"루덴으로 루트 적중 후 폭발 딜. 공허의 지팡이로 마저 관통."}}
+// Lane role map for u.gg
+const laneRoleMap = {
+  top:'top', jungle:'jungle', mid:'middle', adc:'adc', support:'support'
 };
+const laneNames = {top:'탑',jungle:'정글',mid:'미드',adc:'원딜',support:'서포터'};
+const laneIcons = {top:'🛡',jungle:'🌿',mid:'⚡',adc:'🏹',support:'💫'};
 
-// fallback for champions not in DB
-function fallback(name){
-  return {role:"라인",lc:{
-    탑:[{n:"Vayne",s:"강함",r:"트루 데미지로 대부분의 탱커를 무시합니다."},{n:"Fiora",s:"강함",r:"리포스트로 스킬을 무효화하고 지속 딜로 장기전을 지배합니다."},{n:"Gwen",s:"강함",r:"W 무적으로 스킬을 무효화합니다."}],
-    정글:[{n:"Lee Sin",s:"강함",r:"초반 갱킹 능력이 대부분의 챔피언을 앞섭니다."},{n:"Kha'Zix",s:"강함",r:"고립 딜로 혼자 있을 때 처치합니다."},{n:"Vi",s:"강함",r:"R 억압으로 이동기를 봉쇄합니다."}],
-    미드:[{n:"Malzahar",s:"강함",r:"억압 궁으로 모든 이동을 봉쇄합니다."},{n:"Lissandra",s:"강함",r:"CC 사슬로 스킬 연계를 방해합니다."},{n:"Syndra",s:"강함",r:"장거리 포킹과 E 스턴으로 제압합니다."}],
-    원딜:[{n:"Caitlyn",s:"강함",r:"긴 사거리로 접근 전에 지속 견제합니다."},{n:"Miss Fortune",s:"강함",r:"원거리에서 안전하게 딜합니다."},{n:"Jinx",s:"강함",r:"원거리에서 안전하게 딜합니다."}],
-    서포터:[{n:"Morgana",s:"강함",r:"블랙 실드로 CC를 방어합니다."},{n:"Lulu",s:"강함",r:"폴리모프로 진입을 방해합니다."},{n:"Janna",s:"강함",r:"궁으로 이니시를 뒤집습니다."}]
-  },
-  runes:{main:"정밀",sub:"결의",mr:["정복자","피의 맛","전설:강인함","마지막 저항"],sr:["뼈 방패","불굴의 의지"],sh:["공격 속도","적응형","방어력"],note:"정복자로 지속 교전 딜 극대화."},
-  items:{starter:["도란의 검/방패","체력 포션"],core:["삼위일체 검","스테락의 도전","가고일 돌갑옷"],sit:["죽음의 춤","세릴다의 원한","필멸자의 운동화"],boots:"요술사의 신발",note:"일반적인 파이터 빌드."}};
+// Cache
+const cache = {};
+let currentChamp = null;
+let currentLane = 'top';
+
+// ========== API CALL ==========
+async function callAPI(messages, tools) {
+  const body = {
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2000,
+    system: "You are a League of Legends expert analyst. Use web search to find real current counter data. Always respond with ONLY a raw JSON object — no markdown, no explanation, no code fences.",
+    messages
+  };
+  if (tools) body.tools = tools;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }
+  });
+  // Note: auth is injected by the claude.ai proxy
+  const realRes = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!realRes.ok) {
+    const errText = await realRes.text();
+    throw new Error(`API ${realRes.status}: ${errText.slice(0,200)}`);
+  }
+  return realRes.json();
 }
 
-// ===== RENDER =====
-const LANES = ["탑","정글","미드","원딜","서포터"];
-let curLane = null;
-let curData = null;
+// Multi-turn: handle tool_use → tool_result agentic loop
+async function fetchCounters(champName, lane) {
+  const key = `${champName}::${lane}`;
+  if (cache[key]) return cache[key];
 
-function switchTab(t,btn){
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+t).classList.add('active');
-  btn.classList.add('active');
+  const laneKr = laneNames[lane];
+  const role = laneRoleMap[lane];
+  const slug = uggSlug(champName);
+
+  const userMsg = `Search for "${champName} counter ${role} u.gg patch 26 2026 site:u.gg OR site:mobafire.com OR site:op.gg" and find the top 5 counter picks for ${champName} in the ${laneKr} role.
+
+Then return ONLY this JSON (no markdown, no fences):
+{"role":"${laneKr}","counters":[{"name":"English champion name","winRate":"e.g. 54.1%","reason":"2 sentences: WHY this champion counters ${champName} — mention specific skills/mechanics of BOTH champions","tip":"1 sentence: key tip when playing this counter"}]}
+
+Rules:
+- 5 counters total
+- Each reason must be UNIQUE and specific to ${champName}'s actual weaknesses
+- Use real win rate data from search results if available
+- Champion names in English`;
+
+  let messages = [{ role: "user", content: userMsg }];
+  const tools = [{ type: "web_search_20250305", name: "web_search" }];
+
+  // Agentic loop: up to 5 turns to handle tool use
+  for (let i = 0; i < 5; i++) {
+    const body = {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2000,
+      system: "You are a League of Legends expert analyst. Use web search to find real current counter data. Always respond with ONLY a raw JSON object — no markdown, no explanation, no code fences.",
+      tools,
+      messages
+    };
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`API ${res.status}: ${t.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    const content = data.content || [];
+
+    // Add assistant turn
+    messages.push({ role: "assistant", content });
+
+    // Check stop reason
+    if (data.stop_reason === "end_turn") {
+      // Extract final text
+      let text = content.filter(b => b.type === "text").map(b => b.text).join("");
+      text = text.replace(/```json|```/g, "").trim();
+      const s = text.indexOf("{"), e = text.lastIndexOf("}");
+      if (s === -1 || e === -1) throw new Error("No JSON in response");
+      const json = JSON.parse(text.slice(s, e + 1));
+      cache[key] = json;
+      return json;
+    }
+
+    // Handle tool_use blocks
+    if (data.stop_reason === "tool_use") {
+      const toolResults = content
+        .filter(b => b.type === "tool_use")
+        .map(b => ({
+          type: "tool_result",
+          tool_use_id: b.id,
+          content: b.input ? `Searching: ${JSON.stringify(b.input)}` : "search executed"
+        }));
+      messages.push({ role: "user", content: toolResults });
+      continue;
+    }
+
+    // Unexpected stop
+    throw new Error(`Unexpected stop_reason: ${data.stop_reason}`);
+  }
+
+  throw new Error("Max iterations reached");
 }
 
-function setLane(lane,btn){
-  curLane = lane;
-  document.querySelectorAll('.lane-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderLaneContent();
+// ========== UI ==========
+function showLoading(msg='u.gg 데이터 조사 중...', sub='실제 승률 데이터를 가져오는 중입니다'){
+  document.getElementById('loadingBox').style.display='flex';
+  document.getElementById('counterContent').innerHTML='';
+  document.getElementById('loadingMsg').textContent=msg;
+  document.getElementById('loadingSub').textContent=sub;
 }
+function hideLoading(){document.getElementById('loadingBox').style.display='none';}
 
-function renderLaneContent(){
-  const lc = curData.lc || {};
-  const list = curLane ? (lc[curLane]||[]) : LANES.flatMap(l => (lc[l]||[]).map(c=>({...c,_l:l})));
-  let html = '<div class="counter-list">';
-  if(!list.length){html += '<div class="lane-empty">해당 라인 데이터 없음</div>';}
-  list.forEach(c=>{
-    const lTag = c._l ? `<span class="lane-tag">${c._l}</span>` : '';
+function renderCounters(data, lane){
+  hideLoading();
+  const counters = data.counters||[];
+  if(!counters.length){
+    document.getElementById('counterContent').innerHTML='<div class="error-box">카운터 데이터를 찾을 수 없습니다.</div>';
+    return;
+  }
+  let html = `<div class="counter-grid">`;
+  counters.forEach(c => {
+    const wrNum = parseFloat(c.winRate)||0;
+    const wrClass = wrNum>=55?'high':'';
     html += `<div class="counter-card">
-      <img class="counter-splash" src="${splash(c.n)}" onerror="this.src='${icon(c.n)}';this.style.objectPosition='center';">
-      <div class="counter-info">
-        <div class="counter-head"><div class="counter-name">${c.n}</div>${lTag}</div>
-        <span class="counter-badge">${c.s||'강함'}</span>
-        <div class="counter-reason">${c.r}</div>
+      <img class="cc-img" src="${splashUrl(c.name)}" onerror="this.src='${iconUrl(c.name)}';this.style.objectPosition='center';" alt="${c.name}">
+      <div class="cc-info">
+        <div class="cc-top">
+          <div class="cc-name">${c.name}</div>
+          ${c.winRate?`<span class="cc-wr ${wrClass}">승률 ${c.winRate}</span>`:''}
+        </div>
+        <div class="cc-reason">${c.reason}</div>
+        ${c.tip?`<div class="cc-tip">💡 ${c.tip}</div>`:''}
       </div>
     </div>`;
   });
-  html += '</div>';
-  document.getElementById('tab-lane').innerHTML = `<div class="lane-filter">
-    <button class="lane-btn ${!curLane?'active':''}" onclick="setLane(null,this)">전체</button>
-    ${LANES.map(l=>`<button class="lane-btn ${curLane===l?'active':''}" onclick="setLane('${l}',this)">${l}</button>`).join('')}
-  </div>` + html;
+  html += `</div>`;
+  document.getElementById('counterContent').innerHTML = html;
 }
 
-function renderRune(r){
-  if(!r) return '<div class="lane-empty">데이터 없음</div>';
-  return `<div class="sec-title">메인 — ${r.main}</div>
-  <div class="chip-row">${(r.mr||[]).map((x,i)=>`<span class="chip ${i===0?'gold':''}">${x}</span>`).join('')}</div>
-  <div class="sec-title">서브 — ${r.sub}</div>
-  <div class="chip-row">${(r.sr||[]).map(x=>`<span class="chip">${x}</span>`).join('')}</div>
-  <div class="sec-title">파편</div>
-  <div class="chip-row">${(r.sh||[]).map(x=>`<span class="chip green">${x}</span>`).join('')}</div>
-  ${r.note?`<div class="info-note">💡 ${r.note}</div>`:''}`;
-}
+async function selectLane(lane, btn){
+  currentLane = lane;
+  document.querySelectorAll('.lane-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(!currentChamp) return;
 
-function renderItem(it){
-  if(!it) return '<div class="lane-empty">데이터 없음</div>';
-  return `<div class="sec-title">시작 아이템</div>
-  <div class="chip-row">${(it.starter||[]).map(x=>`<span class="chip">${x}</span>`).join('')}</div>
-  <div class="sec-title">핵심 아이템</div>
-  <div class="chip-row">${(it.core||[]).map(x=>`<span class="chip gold">${x}</span>`).join('')}</div>
-  <div class="sec-title">신발</div>
-  <div class="chip-row"><span class="chip green">${it.boots||'-'}</span></div>
-  <div class="sec-title">상황별 아이템</div>
-  <div class="chip-row">${(it.sit||[]).map(x=>`<span class="chip">${x}</span>`).join('')}</div>
-  ${it.note?`<div class="info-note">💡 ${it.note}</div>`:''}`;
+  // check cache
+  const key = `${currentChamp}::${lane}`;
+  if(cache[key]){
+    renderCounters(cache[key], lane);
+    return;
+  }
+
+  showLoading(
+    `${currentChamp} ${laneNames[lane]} 카운터 조사 중...`,
+    `u.gg Patch 26.8 ${laneNames[lane]} 승률 데이터`
+  );
+  try{
+    const data = await fetchCounters(currentChamp, lane);
+    renderCounters(data, lane);
+    document.getElementById('splashRole').textContent = data.role||laneNames[lane];
+  } catch(err){
+    hideLoading();
+    document.getElementById('counterContent').innerHTML=`
+      <div class="error-box">
+        데이터 로드 실패<br>
+        <small>${err.message}</small><br>
+        <button class="retry-btn" onclick="selectLane('${lane}', document.querySelector('.lane-tab.active'))">↺ 다시 시도</button>
+      </div>`;
+  }
 }
 
 function loadChampion(name){
-  curLane = null;
-  const raw = DB[name] || fallback(name);
-  curData = {...raw, name};
+  currentChamp = name;
+  currentLane = 'top';
 
   // Splash
   const sb = document.getElementById('splashBanner');
-  document.getElementById('splashImg').src = splash(name);
-  document.getElementById('splashImg').onerror = function(){this.src=icon(name);this.style.height='120px';};
+  document.getElementById('splashImg').src = splashUrl(name);
+  document.getElementById('splashImg').onerror = function(){this.src=iconUrl(name);this.style.height='120px';};
   document.getElementById('splashName').textContent = name;
-  document.getElementById('splashRole').textContent = raw.role||'';
+  document.getElementById('splashRole').textContent = '분석 중...';
   sb.classList.add('show');
 
   // Drop zone
   const dz = document.getElementById('dropZone');
   dz.classList.add('has-champ');
-  dz.innerHTML = `<img class="drop-champ-img" src="${icon(name)}" onerror="this.src='${icon('Ryze')}'"><div class="drop-champ-name">${name}</div>`;
+  dz.innerHTML=`<img class="drop-champ-img" src="${iconUrl(name)}" onerror="this.src='${iconUrl('Ryze')}'"><div class="drop-champ-name">${name}</div>`;
   document.getElementById('resetBtn').classList.add('show');
 
-  // Result panel
+  // Panel
   const panel = document.getElementById('resultPanel');
   panel.classList.add('show');
-  const rh = document.getElementById('resultHeader');
-  rh.style.display = 'flex';
-  document.getElementById('resultIcon').src = icon(name);
-  document.getElementById('resultName').textContent = name;
-  document.getElementById('resultSub').textContent = (raw.role||'') + ' · 2026 시즌';
-  document.getElementById('tabBar').style.display = 'flex';
+  document.getElementById('resultHeader').style.display='flex';
+  document.getElementById('resultIcon').src=iconUrl(name);
+  document.getElementById('resultName').textContent=name;
+  document.getElementById('laneTabs').style.display='flex';
 
-  // Reset to lane tab
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-lane').classList.add('active');
-  document.querySelector('.tab-btn').classList.add('active');
+  // Reset tabs
+  document.querySelectorAll('.lane-tab').forEach((b,i)=>{b.classList.toggle('active',i===0);});
 
-  renderLaneContent();
-  document.getElementById('tab-rune').innerHTML = renderRune(raw.runes);
-  document.getElementById('tab-item').innerHTML = renderItem(raw.items);
+  // Load top lane first
+  showLoading(`${name} 탑 카운터 조사 중...`, 'u.gg Patch 26.8 탑 라인 승률 데이터');
+  fetchCounters(name, 'top').then(data=>{
+    renderCounters(data,'top');
+    document.getElementById('splashRole').textContent=data.role||'탑';
+  }).catch(err=>{
+    hideLoading();
+    document.getElementById('counterContent').innerHTML=`<div class="error-box">로드 실패: ${err.message}<br><button class="retry-btn" onclick="loadChampion('${name}')">↺ 다시 시도</button></div>`;
+  });
 }
 
 function resetChamp(){
-  const dz = document.getElementById('dropZone');
+  currentChamp=null;currentLane='top';
+  Object.keys(cache).forEach(k=>delete cache[k]);
+  const dz=document.getElementById('dropZone');
   dz.classList.remove('has-champ');
-  dz.innerHTML = '<span class="drop-icon">⬇</span><span class="drop-label">여기에 챔피언을<br>드래그하세요</span>';
+  dz.innerHTML='<span class="drop-icon">⬇</span><span class="drop-label">챔피언을 여기에<br>드래그하세요</span>';
   document.getElementById('resetBtn').classList.remove('show');
   document.getElementById('resultPanel').classList.remove('show');
   document.getElementById('splashBanner').classList.remove('show');
-  document.getElementById('resultHeader').style.display = 'none';
-  document.getElementById('tabBar').style.display = 'none';
-  curData = null; curLane = null;
+  document.getElementById('resultHeader').style.display='none';
+  document.getElementById('laneTabs').style.display='none';
 }
 
-// ===== CHAMPION GRID =====
-let allChamps = [...champions];
+// ========== CHAMPION GRID ==========
+let dragName=null;
 function filterChamps(){
-  const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  if(!q){renderChamps(allChamps);return;}
-  const mapped = korMap[q];
-  if(mapped){renderChamps([mapped]);return;}
-  const km = Object.keys(korMap).filter(k=>k.includes(q)).map(k=>korMap[k]);
-  if(km.length>0){renderChamps([...new Set(km)]);return;}
-  renderChamps(allChamps.filter(c=>c.toLowerCase().includes(q)));
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  if(!q){renderGrid(champions);return;}
+  const m=korMap[q];if(m){renderGrid([m]);return;}
+  const km=Object.keys(korMap).filter(k=>k.includes(q)).map(k=>korMap[k]);
+  if(km.length>0){renderGrid([...new Set(km)]);return;}
+  renderGrid(champions.filter(c=>c.toLowerCase().includes(q)));
 }
-
-function renderChamps(list){
-  const grid = document.getElementById('champGrid');
-  grid.innerHTML = '';
+function renderGrid(list){
+  const g=document.getElementById('champGrid');g.innerHTML='';
   list.forEach(name=>{
-    const tile = document.createElement('div');
-    tile.className = 'champ-tile';
-    tile.draggable = true;
-    tile.dataset.name = name;
-    tile.innerHTML = `<img src="${icon(name)}" alt="${name}" onerror="this.src='${icon('Ryze')}'"><span>${name}</span>`;
-    tile.addEventListener('dragstart', e=>{e.currentTarget.classList.add('dragging');e.dataTransfer.setData('text/plain',name);dragName=name;});
-    tile.addEventListener('dragend', e=>e.currentTarget.classList.remove('dragging'));
-    tile.addEventListener('touchstart', onTouchStart, {passive:true});
-    grid.appendChild(tile);
+    const t=document.createElement('div');t.className='champ-tile';t.draggable=true;t.dataset.name=name;
+    t.innerHTML=`<img src="${iconUrl(name)}" alt="${name}" onerror="this.src='${iconUrl('Ryze')}'"><span>${name}</span>`;
+    t.addEventListener('dragstart',e=>{e.currentTarget.classList.add('dragging');e.dataTransfer.setData('text/plain',name);dragName=name;});
+    t.addEventListener('dragend',e=>e.currentTarget.classList.remove('dragging'));
+    t.addEventListener('touchstart',onTouchStart,{passive:true});
+    g.appendChild(t);
   });
 }
-renderChamps(allChamps);
+renderGrid(champions);
 
-// ===== DRAG & DROP =====
-let dragName = null;
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('over');});
-dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('over'));
-dropZone.addEventListener('drop', e=>{
-  e.preventDefault(); dropZone.classList.remove('over');
-  const n = e.dataTransfer.getData('text/plain')||dragName;
-  if(n) loadChampion(n);
+// ========== DRAG ==========
+const dropZone=document.getElementById('dropZone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('over'));
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault();dropZone.classList.remove('over');
+  const n=e.dataTransfer.getData('text/plain')||dragName;if(n)loadChampion(n);
 });
 
-// ===== TOUCH =====
-let touchChamp=null, ghost=null;
+// ========== TOUCH ==========
+let touchChamp=null,ghost=null;
 function onTouchStart(e){
-  const tile = e.currentTarget; touchChamp = tile.dataset.name;
-  ghost = tile.cloneNode(true);
-  ghost.style.cssText = 'position:fixed;opacity:0.8;pointer-events:none;z-index:9999;width:56px;';
+  const tile=e.currentTarget;touchChamp=tile.dataset.name;
+  ghost=tile.cloneNode(true);ghost.style.cssText='position:fixed;opacity:0.8;pointer-events:none;z-index:9999;width:56px;';
   document.body.appendChild(ghost);
-  tile.addEventListener('touchmove', onTouchMove, {passive:false});
-  tile.addEventListener('touchend', onTouchEnd);
+  tile.addEventListener('touchmove',onTouchMove,{passive:false});
+  tile.addEventListener('touchend',onTouchEnd);
 }
 function onTouchMove(e){
-  e.preventDefault(); const t = e.touches[0];
+  e.preventDefault();const t=e.touches[0];
   if(ghost){ghost.style.left=(t.clientX-28)+'px';ghost.style.top=(t.clientY-28)+'px';}
-  const dz = dropZone.getBoundingClientRect();
-  dropZone.classList.toggle('over', t.clientX>dz.left&&t.clientX<dz.right&&t.clientY>dz.top&&t.clientY<dz.bottom);
+  const dz=dropZone.getBoundingClientRect();
+  dropZone.classList.toggle('over',t.clientX>dz.left&&t.clientX<dz.right&&t.clientY>dz.top&&t.clientY<dz.bottom);
 }
 function onTouchEnd(e){
-  const t=e.changedTouches[0]; if(ghost){ghost.remove();ghost=null;}
+  const t=e.changedTouches[0];if(ghost){ghost.remove();ghost=null;}
   dropZone.classList.remove('over');
   const dz=dropZone.getBoundingClientRect();
-  if(t.clientX>dz.left&&t.clientX<dz.right&&t.clientY>dz.top&&t.clientY<dz.bottom) loadChampion(touchChamp);
+  if(t.clientX>dz.left&&t.clientX<dz.right&&t.clientY>dz.top&&t.clientY<dz.bottom)loadChampion(touchChamp);
   e.currentTarget.removeEventListener('touchmove',onTouchMove);
   e.currentTarget.removeEventListener('touchend',onTouchEnd);
 }
